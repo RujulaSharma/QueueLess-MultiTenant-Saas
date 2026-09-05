@@ -7,6 +7,7 @@ const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
 const queueRoutes = require("./routes/queueRoutes");
+const staffQueueRoutes = require("./routes/staffQueueRoutes");
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.set("io", io);
 // Authentication routes
 app.use("/api/auth", authRoutes);
 app.use("/api/queue", queueRoutes);
+app.use("/api/staff/queue", staffQueueRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
