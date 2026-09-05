@@ -10,6 +10,7 @@ const queueRoutes = require("./routes/queueRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
 const staffQueueRoutes = require("./routes/staffQueueRoutes");
 const predictionRoutes = require("./routes/predictionRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/api/queue", queueRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/staff/queue", staffQueueRoutes);
 app.use("/api/predictions", predictionRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

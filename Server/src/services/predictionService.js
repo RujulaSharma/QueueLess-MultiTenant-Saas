@@ -1,5 +1,6 @@
 const Queue = require("../models/Queue");
 const Service = require("../models/Service");
+const { getHistoricalDuration } = require("./analyticsService");
 
 const ACTIVE_STATUSES = ["WAITING", "CALLED", "SERVING"];
 
@@ -16,7 +17,19 @@ const calculateWaitPrediction = async ({
     throw new Error("Service not found");
   }
 
-  const averageDuration = Math.max(Number(service.averageDuration) || 15, 1);
+  const now = new Date();
+  const averageDuration = Math.max(
+    Number(
+      await getHistoricalDuration({
+        businessId,
+        serviceId,
+        dayOfWeek: now.getDay(),
+        hourOfDay: now.getHours(),
+        fallback: service.averageDuration || 15,
+      })
+    ) || 15,
+    1
+  );
   const bufferTime = Math.max(Number(service.bufferTime) || 0, 0);
 
   const queue = await Queue.find({
@@ -68,7 +81,12 @@ const calculateWaitPrediction = async ({
     calledCount,
     averageServiceMinutes: averageDuration,
     bufferMinutes: bufferTime,
-    confidence: queue.length > 0 ? "medium" : "low",
+    confidence:
+      queue.length === 0
+        ? "low"
+        : averageDuration !== Number(service.averageDuration || 15)
+          ? "high"
+          : "medium",
     calculatedAt: new Date().toISOString(),
   };
 };

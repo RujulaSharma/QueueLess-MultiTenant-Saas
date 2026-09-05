@@ -1,4 +1,5 @@
 const Queue = require("../models/Queue");
+const ServiceHistory = require("../models/ServiceHistory");
 const { emitQueueUpdate } = require("../services/queueService");
 
 
@@ -43,6 +44,25 @@ const completeService = async (req, res, next) => {
     if (!queue) return res.status(404).json({ success: false, message: "Serving queue entry not found" });
     queue.status = "COMPLETED";
     queue.completedAt = new Date();
+
+    if (queue.serviceStartedAt) {
+      const durationMinutes = Math.max(
+        (queue.completedAt - queue.serviceStartedAt) / 60000,
+        0
+      );
+
+      await ServiceHistory.create({
+        business: queue.business,
+        service: queue.service,
+        customer: queue.customer,
+        queueEntry: queue._id,
+        startedAt: queue.serviceStartedAt,
+        completedAt: queue.completedAt,
+        durationMinutes: Number(durationMinutes.toFixed(2)),
+        dayOfWeek: queue.completedAt.getDay(),
+        hourOfDay: queue.completedAt.getHours(),
+      });
+    }
     await queue.save();
     emitQueueUpdate(req, queue, "COMPLETED");
     res.json({ success: true, message: "Service completed", queue });
