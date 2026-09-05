@@ -6,6 +6,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
+const queueRoutes = require("./routes/queueRoutes");
 
 dotenv.config();
 
@@ -27,6 +28,9 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
+  socket.on("joinBusinessRoom", (businessId) => {
+    if (businessId) socket.join(`business:${businessId}`);
+  });
   console.log(`🔌 Client connected: ${socket.id}`);
 
   socket.on("disconnect", () => {
@@ -38,6 +42,7 @@ app.set("io", io);
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+app.use("/api/queue", queueRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
