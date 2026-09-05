@@ -1,11 +1,6 @@
 const Queue = require("../models/Queue");
+const { emitQueueUpdate } = require("../services/queueService");
 
-const emitQueueUpdate = (req, queue, type) => {
-  const io = req.app.get("io");
-  if (io) {
-    io.to(`business:${queue.business}`).emit("queue:updated", { type, queue });
-  }
-};
 
 const callNext = async (req, res, next) => {
   try {

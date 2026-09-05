@@ -1,4 +1,5 @@
 const Queue = require("../models/Queue");
+const { emitQueueUpdate } = require("../services/queueService");
 const Service = require("../models/Service");
 
 const joinQueue = async (req, res, next) => {

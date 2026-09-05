@@ -1,5 +1,6 @@
 const Appointment = require("../models/Appointment");
 const Queue = require("../models/Queue");
+const { emitQueueUpdate } = require("../services/queueService");
 const Service = require("../models/Service");
 
 const createAppointment = async (req, res) => {
@@ -178,14 +179,7 @@ const updateAppointmentStatus = async (req, res) => {
           notes: `Appointment check-in: ${appointment._id}`,
         });
 
-        const io = req.app.get("io");
-
-        if (io) {
-          io.to(`business:${appointment.business}`).emit("queue:updated", {
-            action: "APPOINTMENT_CHECK_IN",
-            queueEntry,
-          });
-        }
+        const io = req.app.get("io");await emitQueueUpdate(io, appointment.business, appointment.service, "APPOINTMENT_CHECK_IN");
       }
     }
 
