@@ -1,4 +1,5 @@
 const Appointment = require("../models/Appointment");
+const Queue = require("../models/Queue");
 const Service = require("../models/Service");
 
 const createAppointment = async (req, res) => {
@@ -142,6 +143,50 @@ const updateAppointmentStatus = async (req, res) => {
 
     if (status === "CHECKED_IN" && !appointment.checkedInAt) {
       appointment.checkedInAt = new Date();
+
+      const existingQueueEntry = await Queue.findOne({
+        customer: appointment.customer,
+        service: appointment.service,
+        status: { $in: ["WAITING", "CALLED", "SERVING"] },
+      });
+
+      if (!existingQueueEntry) {
+        const latestEntry = await Queue.findOne({
+          business: appointment.business,
+          service: appointment.service,
+        }).sort({ tokenNumber: -1 });
+
+        const tokenNumber = latestEntry ? latestEntry.tokenNumber + 1 : 1;
+
+        const waitingCount = await Queue.countDocuments({
+          business: appointment.business,
+          service: appointment.service,
+          status: "WAITING",
+        });
+
+        const service = await Service.findById(appointment.service);
+
+        const queueEntry = await Queue.create({
+          business: appointment.business,
+          service: appointment.service,
+          customer: appointment.customer,
+          tokenNumber,
+          position: waitingCount + 1,
+          estimatedWaitTime:
+            (waitingCount + 1) * (service?.averageDuration || 15),
+          priority: "HIGH",
+          notes: `Appointment check-in: ${appointment._id}`,
+        });
+
+        const io = req.app.get("io");
+
+        if (io) {
+          io.to(`business:${appointment.business}`).emit("queue:updated", {
+            action: "APPOINTMENT_CHECK_IN",
+            queueEntry,
+          });
+        }
+      }
     }
 
     if (status === "COMPLETED" && !appointment.completedAt) {
@@ -162,6 +207,7 @@ const updateAppointmentStatus = async (req, res) => {
     });
   } catch (error) {
     console.error("Update appointment status error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Failed to update appointment",
