@@ -182,3 +182,7 @@
     border-right-color: var(--border);
   }
 }
+
+
+.sidebar-context{display:flex;align-items:center;gap:8px;margin:0 14px 14px;padding:9px 11px;border:1px solid var(--border,#e5e7eb);border-radius:10px;font-size:12px;color:var(--muted,#6b7280);background:var(--surface,#fff)}
+.sidebar-context svg{flex:none}
