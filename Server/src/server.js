@@ -1,3 +1,5 @@
+const businessRoutes = require("./routes/businessRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -12,6 +14,13 @@ const staffQueueRoutes = require("./routes/staffQueueRoutes");
 const predictionRoutes = require("./routes/predictionRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const businessAnalyticsRoutes = require("./routes/businessAnalyticsRoutes");
+const businessDashboardRoutes = require("./routes/businessDashboardRoutes");
+const serviceRoutes = require("./routes/serviceRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
+const doctorRoutes = require("./routes/doctorRoutes");
+const doctorDashboardRoutes = require("./routes/doctorDashboardRoutes");
+const adminBusinessRoutes = require("./routes/adminBusinessRoutes");
+const Doctor = require("./models/Doctor");
 
 dotenv.config();
 
@@ -47,12 +56,21 @@ app.set("io", io);
 
 // Authentication routes
 app.use("/api/auth", authRoutes);
+app.use("/api/businesses", businessRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/queue", queueRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/staff/queue", staffQueueRoutes);
 app.use("/api/predictions", predictionRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/analytics", businessAnalyticsRoutes);
+app.use("/api/business/dashboard", businessDashboardRoutes);
+app.use("/api/admin/business", adminBusinessRoutes);
+app.use("/api/admin/services", serviceRoutes);
+app.use("/api/admin/departments", departmentRoutes);
+app.use("/api/admin/doctors", doctorRoutes);
+app.use("/api/doctors", doctorRoutes);
+app.use("/api/doctor/dashboard", doctorDashboardRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -103,6 +121,7 @@ async function connectDatabase() {
 
   try {
     await mongoose.connect(process.env.MONGO_URI);
+    await Doctor.syncIndexes();
     console.log("🍃 MongoDB connected");
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);

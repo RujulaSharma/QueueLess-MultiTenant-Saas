@@ -1,14 +1,21 @@
 const Queue = require("../models/Queue");
+const Department = require("../models/Department");
+const Service = require("../models/Service");
 const { calculateWaitPrediction } = require("../services/predictionService");
 
 const getQueuePrediction = async (req, res) => {
   try {
-    const { businessId, serviceId, queueId } = req.query;
+    const { businessId, serviceId, departmentId, queueId } = req.query;
+    let resolvedServiceId = serviceId;
+    if (!resolvedServiceId && departmentId) {
+      const department = await Department.findOne({ _id: departmentId, hospital: businessId, isActive: true });
+      resolvedServiceId = department?.legacyService;
+    }
 
-    if (!businessId || !serviceId) {
+    if (!businessId || !resolvedServiceId) {
       return res.status(400).json({
         success: false,
-        message: "businessId and serviceId are required",
+        message: "businessId and departmentId are required",
       });
     }
 
@@ -24,18 +31,18 @@ const getQueuePrediction = async (req, res) => {
 
       if (
         String(queueEntry.business) !== String(businessId) ||
-        String(queueEntry.service) !== String(serviceId)
+        String(queueEntry.service) !== String(resolvedServiceId)
       ) {
         return res.status(400).json({
           success: false,
-          message: "Queue entry does not belong to this business/service",
+          message: "Queue entry does not belong to this hospital/department",
         });
       }
     }
 
     const prediction = await calculateWaitPrediction({
       businessId,
-      serviceId,
+      serviceId: resolvedServiceId,
       targetQueueId: queueId || null,
     });
 
