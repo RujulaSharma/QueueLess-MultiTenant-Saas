@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Business = require("../models/Business");
 
 const generateToken = (userId) => {
   if (!process.env.JWT_SECRET) {
@@ -114,6 +115,19 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Legacy compatibility: older QueueLess hospital-owner accounts were created
+    // with STAFF and/or without businessId. If that user owns a hospital,
+    // promote/link the account so the new ADMIN hospital flow works.
+    const ownedBusiness = await Business.findOne({ owner: user._id, isActive: true }).select("_id");
+    if (ownedBusiness) {
+      const shouldPromote = user.role === "STAFF";
+      if (shouldPromote || !user.businessId || String(user.businessId) !== String(ownedBusiness._id)) {
+        user.businessId = ownedBusiness._id;
+        if (shouldPromote) user.role = "ADMIN";
+        await user.save();
+      }
+    }
+
     const token = generateToken(user._id);
 
     return res.status(200).json({
@@ -127,4 +141,22 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login };
+const getCurrentUser = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    const ownedBusiness = await Business.findOne({ owner: user._id, isActive: true }).select("_id");
+    if (ownedBusiness && (!user.businessId || String(user.businessId) !== String(ownedBusiness._id) || user.role === "STAFF")) {
+      user.businessId = ownedBusiness._id;
+      if (user.role === "STAFF") user.role = "ADMIN";
+      await user.save();
+    }
+
+    return res.json({ success: true, user: safeUser(user) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, getCurrentUser };
