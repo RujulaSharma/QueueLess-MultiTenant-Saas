@@ -15,7 +15,7 @@ export default function Login() {
     setError("");
     try {
       await login(form);
-      navigate(location.state?.from?.pathname || "/dashboard", { replace: true });
+      navigate(location.state?.from?.pathname || "/", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to sign in.");
     }

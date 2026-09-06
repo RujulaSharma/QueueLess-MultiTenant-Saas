@@ -1202,3 +1202,1790 @@ body { background: var(--q-bg) !important; color: var(--q-text) !important; }
   .analytics-summary-strip > div:nth-child(2) { border-right:0; }
   .analytics-summary-strip > div:nth-child(3), .analytics-summary-strip > div:nth-child(4) { border-top:1px solid #e8f0ed; }
 }
+
+
+
+/* =========================================================
+   QueueLess Mobile UI Refresh
+   Optimized for phones without changing desktop layouts.
+   ========================================================= */
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+.button,
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 700px) {
+  /* App shell becomes a compact mobile header + horizontal navigation. */
+  .app-shell {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 1000;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 10px 12px 8px !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid #1c2737;
+    background: rgba(9, 14, 22, .97);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: block !important;
+  }
+
+  .sidebar .brand {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 3px;
+  }
+
+  .sidebar .brand span {
+    display: block !important;
+    font-size: 15px !important;
+    font-weight: 800;
+    letter-spacing: -.02em;
+  }
+
+  .sidebar-context,
+  .sidebar-bottom {
+    display: none !important;
+  }
+
+  .sidebar .nav-list {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    margin: 8px 0 0 !important;
+    padding: 0 0 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .sidebar .nav-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar .nav-list .home-nav-link,
+  .sidebar .nav-list .nav-link {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-height: 36px;
+    margin: 0 !important;
+    padding: 8px 11px !important;
+    border-radius: 9px;
+    font-size: 11px !important;
+    white-space: nowrap;
+    gap: 7px;
+  }
+
+  .sidebar .nav-list .home-nav-link span,
+  .sidebar .nav-list .nav-link span {
+    display: inline !important;
+    font-size: 11px !important;
+  }
+
+  .sidebar .nav-list .home-nav-link svg,
+  .sidebar .nav-list .nav-link svg {
+    width: 15px;
+    height: 15px;
+    margin: 0 !important;
+  }
+
+  .sidebar .nav-list .nav-link.active {
+    background: #e9eef5;
+    color: #0b111a;
+    border-color: #e9eef5;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    width: 100% !important;
+    min-width: 0;
+    padding: 112px 14px 34px !important;
+  }
+
+  /* Headers */
+  .page-header {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 13px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .page-header h1 {
+    font-size: clamp(27px, 8vw, 34px) !important;
+    line-height: 1.05;
+    margin: 7px 0 6px !important;
+  }
+
+  .page-header p {
+    font-size: 12px;
+    line-height: 1.55;
+    max-width: 100%;
+  }
+
+  .page-header > .button,
+  .page-header > a.button {
+    width: 100%;
+  }
+
+  /* Cards and panels */
+  .panel,
+  .feature-card,
+  .stat-card {
+    border-radius: 14px;
+  }
+
+  .panel-title-row {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px !important;
+  }
+
+  .panel-title-row .inline-link {
+    font-size: 11px;
+  }
+
+  .stat-grid,
+  .business-stats,
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .stat-card {
+    padding: 15px !important;
+    min-width: 0;
+  }
+
+  .stat-card > span {
+    margin: 12px 0 4px !important;
+    font-size: 10px;
+  }
+
+  .stat-card strong {
+    font-size: 23px !important;
+  }
+
+  .stat-card small {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .feature-card,
+  .action-panel,
+  .tip-panel,
+  .booking-form,
+  .profile-form,
+  .booking-summary,
+  .business-queue-panel,
+  .service-panel,
+  .analytics-panel,
+  .admin-live-panel,
+  .admin-team-panel,
+  .queue-history,
+  .settings-panel {
+    padding: 17px !important;
+  }
+
+  .empty-panel {
+    min-height: 250px;
+    padding: 30px 18px !important;
+  }
+
+  /* Forms */
+  .booking-layout,
+  .profile-layout,
+  .dashboard-grid,
+  .business-dashboard-grid,
+  .analytics-grid,
+  .services-layout,
+  .manager-hero-grid,
+  .admin-overview-grid,
+  .admin-bottom-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-two {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .field {
+    margin-bottom: 13px;
+  }
+
+  .field input,
+  .field select,
+  .field textarea,
+  .form input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .button,
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    min-height: 40px;
+  }
+
+  /* Appointments */
+  .appointment-card {
+    padding: 15px !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+  }
+
+  .appointment-main {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .appointment-card h2 {
+    font-size: 17px !important;
+    margin-bottom: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .appointment-side {
+    width: 100%;
+    justify-items: start !important;
+    grid-template-columns: 1fr;
+  }
+
+  .appointment-side .button,
+  .appointment-side a.button {
+    width: 100%;
+  }
+
+  .meta-row {
+    gap: 7px 11px;
+    line-height: 1.4;
+  }
+
+  /* Queue hero */
+  .queue-hero {
+    padding: 17px !important;
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+
+  .queue-token strong {
+    font-size: 30px;
+  }
+
+  .queue-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .queue-metrics div {
+    padding: 10px 8px;
+  }
+
+  .queue-metrics strong {
+    font-size: 14px;
+  }
+
+  .queue-metrics span {
+    font-size: 9px;
+  }
+
+  .queue-actions {
+    justify-self: stretch !important;
+  }
+
+  .queue-actions .button {
+    width: 100%;
+  }
+
+  /* Live/business queue rows become compact cards. */
+  .business-queue-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto !important;
+    gap: 9px !important;
+    padding: 13px 0 !important;
+  }
+
+  .business-queue-row > div:nth-child(2) {
+    min-width: 0;
+  }
+
+  .business-queue-row > div:nth-child(2) strong,
+  .business-queue-row > div:nth-child(2) span {
+    overflow-wrap: anywhere;
+  }
+
+  .business-queue-row .queue-controls {
+    grid-column: 2 / -1 !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+  }
+
+  .business-live-row {
+    grid-template-columns: 45px minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    padding: 13px 0 !important;
+  }
+
+  .business-live-row > span:nth-of-type(2) {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+
+  /* Doctor current card */
+  .doctor-current-card {
+    padding: 15px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .doctor-current-card h3 {
+    font-size: 19px;
+  }
+
+  .button-row {
+    width: 100%;
+  }
+
+  .button-row > button {
+    flex: 1 1 140px;
+  }
+
+  /* Tables stay usable instead of crushing columns. */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+  }
+
+  .data-table {
+    min-width: 610px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 9px;
+    white-space: nowrap;
+  }
+
+  /* Admin dashboard */
+  .admin-queue-summary,
+  .admin-team-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-mini-row,
+  .admin-doctor-row {
+    min-width: 0;
+  }
+
+  .admin-mini-row > div,
+  .admin-doctor-row > div:nth-child(2) {
+    min-width: 0;
+  }
+
+  .admin-department-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 13px 0 !important;
+  }
+
+  .department-result {
+    text-align: left !important;
+  }
+
+  .department-meter {
+    width: 100%;
+  }
+
+  /* Management/service cards */
+  .managed-service {
+    align-items: flex-start !important;
+    flex-direction: column;
+    padding: 14px !important;
+    gap: 12px;
+  }
+
+  .managed-service-actions {
+    width: 100%;
+    flex-direction: row !important;
+  }
+
+  .managed-service-actions .icon-action {
+    flex: 1;
+  }
+
+  /* Schedules */
+  .schedule-row {
+    grid-template-columns: 55px minmax(0, 1fr) auto !important;
+    gap: 9px !important;
+    align-items: start !important;
+  }
+
+  .schedule-row .status-badge {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
+
+  .progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dashboard-shortcuts {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Analytics */
+  .analytics-row {
+    grid-template-columns: minmax(0, 1fr) 70px !important;
+    gap: 10px;
+  }
+
+  .analytics-row .analytics-number:last-child {
+    display: none;
+  }
+
+  .analytics-chart {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .analytics-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* Profile */
+  .profile-hero {
+    padding: 15px !important;
+    gap: 12px;
+  }
+
+  .profile-facts {
+    padding: 17px 15px !important;
+  }
+
+  /* Auth */
+  .auth-page {
+    padding: 16px !important;
+  }
+
+  .auth-card {
+    padding: 23px 18px !important;
+    border-radius: 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 27px;
+  }
+}
+
+@media (max-width: 420px) {
+  .main-content {
+    padding-left: 11px !important;
+    padding-right: 11px !important;
+  }
+
+  .stat-grid,
+  .business-stats,
+  .admin-kpi-grid {
+    gap: 7px !important;
+  }
+
+  .stat-card {
+    padding: 13px !important;
+  }
+
+  .stat-card strong {
+    font-size: 21px !important;
+  }
+
+  .queue-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .queue-metrics div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .queue-metrics span {
+    margin: 0 !important;
+  }
+
+  .queue-metrics strong {
+    order: 2;
+  }
+
+  .admin-queue-summary,
+  .admin-team-stats,
+  .analytics-summary-strip {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .page-header h1 {
+    font-size: 26px !important;
+  }
+
+  .eyebrow {
+    font-size: 9px;
+  }
+}
+
+
+/* =========================================================
+   QueueLess Home Page Spacing Pass
+   Removes excessive vertical whitespace while preserving
+   the existing visual hierarchy.
+   ========================================================= */
+
+.public-hero-inner {
+  min-height: 540px;
+  padding-top: 54px;
+  padding-bottom: 46px;
+}
+
+.hero-visual {
+  min-height: 455px;
+}
+
+.phone-mockup {
+  min-height: 450px;
+}
+
+.public-section {
+  padding-top: 58px;
+  padding-bottom: 58px;
+}
+
+.section-intro {
+  margin-bottom: 26px;
+}
+
+.steps-section {
+  padding-top: 52px;
+  padding-bottom: 52px;
+}
+
+.step-card {
+  min-height: 165px;
+  padding: 21px;
+}
+
+.step-card h3 {
+  margin-top: 25px;
+}
+
+.specialties-section {
+  padding-top: 18px;
+  padding-bottom: 52px;
+}
+
+.why-section {
+  padding-top: 52px;
+  padding-bottom: 58px;
+}
+
+.feature-public-card {
+  padding: 21px;
+}
+
+.feature-public-card h3 {
+  margin-top: 17px;
+}
+
+.role-banner {
+  margin-bottom: 55px;
+  padding: 35px;
+}
+
+.public-final-cta {
+  margin-bottom: 50px;
+  padding: 38px;
+}
+
+.public-footer-main {
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+
+@media (max-width: 1000px) {
+  .public-hero-inner {
+    min-height: auto;
+    padding-top: 45px;
+    padding-bottom: 35px;
+  }
+
+  .hero-visual {
+    min-height: 480px;
+  }
+
+  .public-section {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+
+  .why-section {
+    padding-top: 45px;
+  }
+
+  .role-banner {
+    margin-bottom: 45px;
+  }
+}
+
+@media (max-width: 760px) {
+  .public-hero-inner {
+    padding: 34px 18px 18px;
+  }
+
+  .hero-copy h1 {
+    margin-top: 14px;
+    margin-bottom: 17px;
+  }
+
+  .public-hero-actions {
+    margin-top: 21px;
+  }
+
+  .trust-row {
+    margin-top: 21px;
+    gap: 10px 15px;
+  }
+
+  .hero-visual {
+    min-height: 410px;
+    transform: scale(.82);
+    transform-origin: top center;
+    margin-top: 0;
+    margin-bottom: -70px;
+  }
+
+  .public-section {
+    padding: 40px 18px;
+  }
+
+  .section-intro {
+    margin-bottom: 21px;
+  }
+
+  .section-intro h2,
+  .public-final-cta h2,
+  .role-banner h2 {
+    font-size: 30px;
+  }
+
+  .steps-section {
+    padding-top: 35px;
+    padding-bottom: 35px;
+  }
+
+  .steps-grid {
+    gap: 9px;
+  }
+
+  .step-card {
+    min-height: 0;
+    padding: 18px;
+  }
+
+  .step-card h3 {
+    margin-top: 19px;
+  }
+
+  .specialties-section {
+    padding-top: 12px;
+    padding-bottom: 38px;
+  }
+
+  .why-section {
+    padding-top: 38px;
+    padding-bottom: 42px;
+  }
+
+  .feature-grid-public {
+    gap: 9px;
+  }
+
+  .feature-public-card {
+    padding: 18px;
+  }
+
+  .feature-public-card h3 {
+    margin-top: 14px;
+  }
+
+  .role-banner {
+    margin: 0 18px 38px;
+    padding: 25px 20px;
+    gap: 22px;
+  }
+
+  .public-final-cta {
+    margin: 0 18px 38px;
+    padding: 25px 20px;
+  }
+
+  .final-cta-actions {
+    margin-top: 17px;
+  }
+
+  .public-footer-main {
+    padding-top: 25px;
+    padding-bottom: 25px;
+  }
+}
+
+
+/* ============================================================
+   QueueLess Hero Layout - Split Copy + Phone Visual
+   Desktop: copy left, phone right
+   Mobile: compact stacked layout
+   ============================================================ */
+
+.public-hero {
+  overflow: hidden;
+}
+
+.public-hero-inner {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr) !important;
+  align-items: center !important;
+  gap: clamp(28px, 5vw, 76px) !important;
+  min-height: 560px !important;
+  padding: 54px clamp(24px, 5vw, 72px) 48px !important;
+}
+
+.hero-copy {
+  min-width: 0;
+  max-width: 720px;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-visual {
+  min-width: 0;
+  min-height: 500px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative;
+  z-index: 1;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+.hero-visual::before {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(32, 190, 151, .18) 0%, rgba(32, 190, 151, .07) 48%, transparent 72%);
+  z-index: -1;
+}
+
+.phone-mockup {
+  width: min(100%, 370px) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  transform: none !important;
+  position: relative;
+}
+
+.public-hero .hero-title,
+.public-hero h1 {
+  max-width: 760px;
+}
+
+.public-hero .hero-actions,
+.public-hero .hero-trust {
+  max-width: 720px;
+}
+
+/* Keep the feature strip directly after the hero rather than creating a giant gap. */
+.public-service-strip,
+.public-hero + .public-service-strip {
+  margin-top: 0 !important;
+}
+
+/* Medium desktop/tablet */
+@media (max-width: 1000px) and (min-width: 761px) {
+  .public-hero-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(290px, .78fr) !important;
+    gap: 28px !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+
+  .hero-visual {
+    min-height: 420px !important;
+  }
+
+  .phone-mockup {
+    width: min(100%, 320px) !important;
+  }
+}
+
+/* Phone: retain the split composition but compact it so the hero is not
+   a long wall of scrolling. */
+@media (max-width: 760px) {
+  .public-hero-inner {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    min-height: auto !important;
+    padding: 32px 18px 22px !important;
+  }
+
+  .hero-copy {
+    max-width: none;
+  }
+
+  .hero-visual {
+    min-height: 380px !important;
+    margin-top: 0 !important;
+    align-items: center !important;
+  }
+
+  .hero-visual::before {
+    width: 280px;
+    height: 280px;
+  }
+
+  .phone-mockup {
+    width: min(78vw, 310px) !important;
+    max-width: 310px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .public-hero-inner {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    padding-top: 26px !important;
+  }
+
+  .hero-visual {
+    min-height: 335px !important;
+  }
+
+  .phone-mockup {
+    width: min(76vw, 285px) !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - Compact Why QueueLess Section
+   Reduces vertical scrolling while keeping the same content.
+   ============================================================ */
+
+.why-section {
+  padding-top: 34px !important;
+  padding-bottom: 38px !important;
+}
+
+.why-section .section-intro {
+  margin-bottom: 18px !important;
+  gap: 24px !important;
+}
+
+.why-section .section-intro h2 {
+  margin-bottom: 8px !important;
+  line-height: 1.05 !important;
+}
+
+.why-section .section-intro p {
+  margin-top: 0 !important;
+  line-height: 1.45 !important;
+}
+
+.why-section .feature-grid-public {
+  gap: 12px !important;
+}
+
+.why-section .feature-public-card {
+  padding: 16px !important;
+  min-height: 0 !important;
+  border-radius: 14px !important;
+}
+
+.why-section .public-feature-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+.why-section .feature-public-card h3 {
+  margin: 0 0 6px !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+.why-section .feature-public-card p {
+  margin: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+}
+
+/* Compact the dark "three views" panel */
+.why-section .role-banner {
+  margin-top: 16px !important;
+  margin-bottom: 0 !important;
+  padding: 22px 24px !important;
+  min-height: 0 !important;
+  border-radius: 16px !important;
+}
+
+.why-section .role-banner h3 {
+  margin: 0 0 7px !important;
+  line-height: 1.1 !important;
+}
+
+.why-section .role-banner p {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.why-section .role-banner > * {
+  min-height: 0 !important;
+}
+
+/* Mobile: make the section noticeably shorter without crushing text */
+@media (max-width: 760px) {
+  .why-section {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+  }
+
+  .why-section .section-intro {
+    margin-bottom: 14px !important;
+    gap: 12px !important;
+  }
+
+  .why-section .feature-grid-public {
+    gap: 9px !important;
+  }
+
+  .why-section .feature-public-card {
+    padding: 13px !important;
+  }
+
+  .why-section .public-feature-icon {
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .why-section .feature-public-card h3 {
+    font-size: 13px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .why-section .feature-public-card p {
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+  }
+
+  .why-section .role-banner {
+    margin-top: 12px !important;
+    padding: 17px 16px !important;
+  }
+
+  .why-section .role-banner h3 {
+    font-size: 20px !important;
+  }
+
+  .why-section .role-banner p {
+    font-size: 11px !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - Compact "How It Works" Mobile Grid
+   Mobile: 2 columns x 2 rows
+   Desktop/tablet: preserve the existing layout
+   ============================================================ */
+
+@media (max-width: 760px) {
+  #how-it-works .steps-grid,
+  .steps-section .steps-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 16px !important;
+  }
+
+  #how-it-works .step-card,
+  .steps-section .step-card {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 13px !important;
+    border-radius: 13px !important;
+  }
+
+  #how-it-works .step-number,
+  .steps-section .step-number {
+    width: 30px !important;
+    height: 30px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-bottom: 9px !important;
+    font-size: 11px !important;
+  }
+
+  #how-it-works .step-card h3,
+  .steps-section .step-card h3 {
+    margin: 0 0 5px !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+  }
+
+  #how-it-works .step-card p,
+  .steps-section .step-card p {
+    margin: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.4 !important;
+  }
+
+  #how-it-works .section-intro,
+  .steps-section .section-intro {
+    margin-bottom: 14px !important;
+    gap: 10px !important;
+  }
+
+  #how-it-works .section-intro h2,
+  .steps-section .section-intro h2 {
+    margin-bottom: 6px !important;
+    line-height: 1.08 !important;
+  }
+
+  #how-it-works .section-intro p,
+  .steps-section .section-intro p {
+    margin: 0 !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 420px) {
+  #how-it-works .steps-grid,
+  .steps-section .steps-grid {
+    gap: 8px !important;
+    margin-top: 13px !important;
+  }
+
+  #how-it-works .step-card,
+  .steps-section .step-card {
+    padding: 11px !important;
+    border-radius: 11px !important;
+  }
+
+  #how-it-works .step-number,
+  .steps-section .step-number {
+    width: 27px !important;
+    height: 27px !important;
+    margin-bottom: 7px !important;
+    font-size: 10px !important;
+  }
+
+  #how-it-works .step-card h3,
+  .steps-section .step-card h3 {
+    font-size: 12px !important;
+  }
+
+  #how-it-works .step-card p,
+  .steps-section .step-card p {
+    font-size: 9.5px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - Compact Services + Why QueueLess on small screens
+   Services: 2 columns x 3 rows
+   Why QueueLess: 2 columns x 2 rows
+   ============================================================ */
+
+@media (max-width: 760px) {
+
+  /* ---------- SERVICES ---------- */
+  #services .services-grid,
+  #services .service-grid,
+  .services-section .services-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    margin-top: 14px !important;
+  }
+
+  #services .service-card,
+  .services-section .service-card {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  #services .service-icon,
+  .services-section .service-icon {
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #services .service-name,
+  .services-section .service-name {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+  }
+
+  #services .service-arrow,
+  .services-section .service-arrow {
+    width: 25px !important;
+    height: 25px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* If the service card is a horizontal row, keep it compact. */
+  #services .service-card {
+    gap: 8px !important;
+  }
+
+  /* ---------- WHY QUEUELESS ---------- */
+  #why-queueless .feature-grid-public,
+  #why-queueless .feature-grid,
+  .why-section .feature-grid-public,
+  .why-section .feature-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    margin-top: 14px !important;
+  }
+
+  #why-queueless .feature-public-card,
+  .why-section .feature-public-card {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+
+  #why-queueless .public-feature-icon,
+  .why-section .public-feature-icon {
+    width: 30px !important;
+    height: 30px !important;
+    margin-bottom: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  #why-queueless .feature-public-card h3,
+  .why-section .feature-public-card h3 {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    margin: 0 0 5px !important;
+  }
+
+  #why-queueless .feature-public-card p,
+  .why-section .feature-public-card p {
+    font-size: 9.5px !important;
+    line-height: 1.35 !important;
+    margin: 0 !important;
+  }
+
+  #why-queueless .role-banner,
+  .why-section .role-banner {
+    margin-top: 12px !important;
+    margin-bottom: 0 !important;
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  /* ---------- SECTION SPACING ---------- */
+  #services.public-section,
+  .services-section.public-section {
+    padding-top: 30px !important;
+    padding-bottom: 30px !important;
+  }
+
+  #why-queueless.public-section,
+  .why-section.public-section {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+  }
+
+  #services .section-intro,
+  #why-queueless .section-intro,
+  .services-section .section-intro,
+  .why-section .section-intro {
+    margin-bottom: 12px !important;
+    gap: 10px !important;
+  }
+}
+
+/* Extra-tight phones */
+@media (max-width: 420px) {
+
+  #services .services-grid,
+  #services .service-grid,
+  .services-section .services-grid {
+    gap: 7px !important;
+    margin-top: 11px !important;
+  }
+
+  #services .service-card,
+  .services-section .service-card {
+    padding: 10px !important;
+    border-radius: 10px !important;
+  }
+
+  #services .service-icon,
+  .services-section .service-icon {
+    width: 27px !important;
+    height: 27px !important;
+    margin-bottom: 6px !important;
+  }
+
+  #services .service-name,
+  .services-section .service-name {
+    font-size: 11px !important;
+  }
+
+  #why-queueless .feature-grid-public,
+  #why-queueless .feature-grid,
+  .why-section .feature-grid-public,
+  .why-section .feature-grid {
+    gap: 7px !important;
+    margin-top: 11px !important;
+  }
+
+  #why-queueless .feature-public-card,
+  .why-section .feature-public-card {
+    padding: 10px !important;
+  }
+
+  #why-queueless .public-feature-icon,
+  .why-section .public-feature-icon {
+    width: 27px !important;
+    height: 27px !important;
+    margin-bottom: 6px !important;
+  }
+
+  #why-queueless .feature-public-card h3,
+  .why-section .feature-public-card h3 {
+    font-size: 11px !important;
+  }
+
+  #why-queueless .feature-public-card p,
+  .why-section .feature-public-card p {
+    font-size: 9px !important;
+  }
+
+  #why-queueless .role-banner,
+  .why-section .role-banner {
+    padding: 13px !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - Compact Departments / Care Organized section
+   Mobile: 2 columns x 3 rows
+   ============================================================ */
+
+@media (max-width: 760px) {
+  #departments .departments-grid,
+  #departments .department-grid,
+  #departments .departments-list,
+  #departments .department-list,
+  #care-organized .departments-grid,
+  #care-organized .department-grid,
+  .departments-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+    margin-top: 14px !important;
+  }
+
+  #departments .department-card,
+  #departments .department-item,
+  #care-organized .department-card,
+  .department-card {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+
+  #departments .department-icon,
+  #departments .department-card-icon,
+  #care-organized .department-icon,
+  .department-icon {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    border-radius: 9px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+  }
+
+  #departments .department-card h3,
+  #departments .department-item h3,
+  #care-organized .department-card h3,
+  .department-card h3 {
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+  }
+
+  #departments .arrow-btn,
+  #departments .department-arrow,
+  #care-organized .arrow-btn,
+  .department-card .arrow-btn {
+    position: static !important;
+    width: 25px !important;
+    height: 25px !important;
+    margin: 0 !important;
+    align-self: flex-end !important;
+  }
+
+  #departments .section-intro,
+  #care-organized .section-intro {
+    margin-bottom: 12px !important;
+    gap: 10px !important;
+  }
+
+  #departments.public-section,
+  #care-organized.public-section {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  #departments .departments-grid,
+  #departments .department-grid,
+  #departments .departments-list,
+  #departments .department-list,
+  #care-organized .departments-grid,
+  #care-organized .department-grid,
+  .departments-grid {
+    gap: 7px !important;
+    margin-top: 11px !important;
+  }
+
+  #departments .department-card,
+  #departments .department-item,
+  #care-organized .department-card,
+  .department-card {
+    padding: 10px !important;
+    border-radius: 10px !important;
+    gap: 6px !important;
+  }
+
+  #departments .department-icon,
+  #departments .department-card-icon,
+  #care-organized .department-icon,
+  .department-icon {
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px !important;
+  }
+
+  #departments .department-card h3,
+  #departments .department-item h3,
+  #care-organized .department-card h3,
+  .department-card h3 {
+    font-size: 11px !important;
+  }
+
+  #departments .arrow-btn,
+  #departments .department-arrow,
+  #care-organized .arrow-btn,
+  .department-card .arrow-btn {
+    width: 23px !important;
+    height: 23px !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - FIXED mobile Care Organized / Departments
+   Actual markup:
+   .specialties-section
+   .specialty-grid
+   .specialty-card
+   ============================================================ */
+
+@media (max-width: 760px) {
+  .specialties-section {
+    padding: 28px 18px !important;
+  }
+
+  .specialties-section .section-intro.compact {
+    display: block !important;
+    margin-bottom: 14px !important;
+  }
+
+  .specialties-section .section-intro.compact h2 {
+    margin: 5px 0 7px !important;
+    line-height: 1.08 !important;
+  }
+
+  .specialties-section .section-intro.compact p {
+    margin: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* THIS is the actual grid on the home page */
+  .specialties-section .specialty-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-rows: minmax(0, auto) !important;
+    gap: 9px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* 6 departments = exactly 2 columns x 3 rows */
+  .specialties-section .specialty-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    height: 48px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 8px 9px !important;
+    border-radius: 11px !important;
+  }
+
+  .specialties-section .specialty-card > span {
+    flex: 0 0 auto !important;
+    font-size: 8px !important;
+    line-height: 1 !important;
+  }
+
+  .specialties-section .specialty-card > strong {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+
+  .specialties-section .specialty-card > svg {
+    flex: 0 0 auto !important;
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .specialties-section {
+    padding: 24px 14px !important;
+  }
+
+  .specialties-section .section-intro.compact {
+    margin-bottom: 11px !important;
+  }
+
+  .specialties-section .section-intro.compact h2 {
+    font-size: 22px !important;
+  }
+
+  .specialties-section .section-intro.compact p {
+    font-size: 10px !important;
+  }
+
+  .specialties-section .specialty-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .specialties-section .specialty-card {
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 7px 8px !important;
+    gap: 5px !important;
+    border-radius: 9px !important;
+  }
+
+  .specialties-section .specialty-card > span {
+    font-size: 7px !important;
+  }
+
+  .specialties-section .specialty-card > strong {
+    font-size: 9px !important;
+  }
+
+  .specialties-section .specialty-card > svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+}
+
+
+/* ============================================================
+   QueueLess - Mobile Profile / Settings / Logout
+   Keep account controls accessible on phones.
+   ============================================================ */
+
+.mobile-account-actions {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .mobile-account-actions {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: 7px;
+    padding: 0 0 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-account-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-account-link {
+    flex: 0 0 auto;
+    min-height: 34px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 11px !important;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 9px;
+    background: rgba(255,255,255,.055);
+    color: #d7e0e8;
+    text-decoration: none;
+    font: inherit;
+    font-size: 11px !important;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .mobile-account-link svg {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+  }
+
+  .mobile-account-link.active {
+    background: #e9eef5;
+    color: #0b111a;
+    border-color: #e9eef5;
+  }
+
+  .mobile-account-link.mobile-logout {
+    color: #ffb8b8;
+    border-color: rgba(255, 110, 110, .18);
+  }
+
+  .mobile-account-link.mobile-logout:hover {
+    background: rgba(255, 90, 90, .10);
+  }
+
+  /* Keep the old desktop account block hidden on mobile.
+     The dedicated mobile row above replaces it. */
+  .sidebar-bottom {
+    display: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-account-actions {
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .mobile-account-link {
+    min-height: 32px;
+    padding: 6px 9px !important;
+    font-size: 10px !important;
+    border-radius: 8px;
+  }
+
+  .mobile-account-link svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+
+/* ============================================================
+   QueueLess Home Navbar - Auth Actions
+   Guest: Login + Register
+   Signed in: Profile + Logout
+   Mobile: same actions inside the menu
+   ============================================================ */
+
+.public-register {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 15px;
+  border-radius: 9px;
+  background: #078f84;
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.public-profile-link,
+.public-logout-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.public-profile-link:hover,
+.public-logout-link:hover {
+  color: #07877e;
+}
+
+.public-logout-link {
+  color: #b4233c;
+}
+
+.mobile-home-auth {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  /* Keep auth controls reachable without opening another page. */
+  .public-nav-actions .public-login,
+  .public-nav-actions .public-register,
+  .public-nav-actions .public-profile-link,
+  .public-nav-actions .public-logout-link {
+    display: none !important;
+  }
+
+  .mobile-home-auth {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid #e4eeeb;
+  }
+
+  .mobile-home-auth a,
+  .mobile-home-auth button {
+    min-height: 40px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 10px !important;
+    border: 1px solid #d8e8e3;
+    border-radius: 9px;
+    background: #f7fbfa;
+    color: #176d67 !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .mobile-home-auth button {
+    font-family: inherit;
+  }
+
+  .mobile-home-auth button:last-child {
+    color: #b4233c !important;
+    border-color: #f0d8dd;
+    background: #fff8f9;
+  }
+
+  .mobile-home-auth a:nth-child(2):last-child {
+    color: #07877e !important;
+  }
+
+  /* Guest gets Login + Register; make Register visually primary. */
+  .mobile-home-auth a[href="/register"] {
+    background: #078f84;
+    color: #fff !important;
+    border-color: #078f84;
+  }
+}
+
+@media (max-width: 420px) {
+  .mobile-home-auth {
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 10px;
+  }
+
+  .mobile-home-auth a,
+  .mobile-home-auth button {
+    min-height: 36px;
+    padding: 7px 8px !important;
+    font-size: 11px !important;
+    border-radius: 8px;
+  }
+}

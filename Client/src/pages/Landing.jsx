@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, CalendarCheck2, CheckCircle2, Clock3, HeartPulse, Hospital, ListChecks, Menu, PlayCircle, Radio, ShieldCheck, Stethoscope, UsersRound, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, CalendarCheck2, CheckCircle2, Clock3, HeartPulse, Hospital, ListChecks, Menu, PlayCircle, Radio, ShieldCheck, Stethoscope, UsersRound, UserRound, LogOut, X } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,10 +18,16 @@ const steps = [
 const specialties = ["Dental", "Blood Test", "BP Check", "X-Ray", "General Medicine", "Diagnostics"];
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const dashboardPath = user?.role === "ADMIN" ? "/admin" : "/dashboard";
   const closeMobile = () => setMobileOpen(false);
+  const handleLogout = () => {
+    logout();
+    closeMobile();
+    navigate("/");
+  };
 
   return (
     <div className="public-home">
@@ -36,11 +42,49 @@ export default function Landing() {
             <a href="#services" onClick={closeMobile}>Services</a>
             <a href="#why-queueless" onClick={closeMobile}>Why QueueLess</a>
             <a href="#contact" onClick={closeMobile}>Contact</a>
+
+            {/* Auth actions are also available inside the mobile menu. */}
+            <div className="mobile-home-auth">
+              {user ? (
+                <>
+                  <Link to="/profile" onClick={closeMobile}>
+                    <UserRound size={16} /> Profile
+                  </Link>
+                  <Link to={dashboardPath} onClick={closeMobile}>
+                    Dashboard
+                  </Link>
+                  <button type="button" onClick={handleLogout}>
+                    <LogOut size={16} /> Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={closeMobile}>Login</Link>
+                  <Link to="/register" onClick={closeMobile}>Register</Link>
+                </>
+              )}
+            </div>
           </nav>
+
           <div className="public-nav-actions">
-            <Link className="public-login" to={user ? dashboardPath : "/login"}>{user ? "Dashboard" : "Login"}</Link>
-            <Link className="public-cta" to={user ? "/book" : "/register"}>{user ? "Book appointment" : "Get started"}<ArrowRight size={16} /></Link>
-            <button className="mobile-menu" aria-label="Toggle navigation" onClick={() => setMobileOpen(v => !v)}>{mobileOpen ? <X size={21} /> : <Menu size={21} />}</button>
+            {user ? (
+              <>
+                <Link className="public-login public-profile-link" to="/profile">
+                  <UserRound size={15} /> Profile
+                </Link>
+                <button className="public-login public-logout-link" type="button" onClick={handleLogout}>
+                  <LogOut size={15} /> Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className="public-login" to="/login">Login</Link>
+                <Link className="public-register" to="/register">Register</Link>
+              </>
+            )}
+            <button className="mobile-menu" aria-label="Toggle navigation" onClick={() => setMobileOpen(v => !v)}>
+              {mobileOpen ? <X size={21} /> : <Menu size={21} />}
+            </button>
           </div>
         </div>
       </header>

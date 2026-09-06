@@ -58,7 +58,7 @@ export default function AppLayout() {
         </div>
 
         <nav className="nav-list">
-        <Link to="/" className="home-nav-link"><Home size={18} /><span>Home</span></Link>
+          <Link to="/" className="home-nav-link"><Home size={18} /><span>Home</span></Link>
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -70,6 +70,35 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Mobile account actions. The desktop sidebar keeps its existing
+            Profile / Settings / Sign out controls below. */}
+        <div className="mobile-account-actions">
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => `mobile-account-link ${isActive ? "active" : ""}`}
+          >
+            <UserRound size={16} />
+            <span>Profile</span>
+          </NavLink>
+
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => `mobile-account-link ${isActive ? "active" : ""}`}
+          >
+            <Settings size={16} />
+            <span>Settings</span>
+          </NavLink>
+
+          <button
+            type="button"
+            className="mobile-account-link mobile-logout"
+            onClick={() => { logout(); navigate("/"); }}
+          >
+            <LogOut size={16} />
+            <span>Logout</span>
+          </button>
+        </div>
 
         <div className="sidebar-bottom">
           <div className="sidebar-links">
