@@ -2,6 +2,13 @@ const mongoose = require("mongoose");
 
 const serviceSchema = new mongoose.Schema(
   {
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+      index: true,
+    },
+
     business: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
