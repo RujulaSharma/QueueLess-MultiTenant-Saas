@@ -4,7 +4,7 @@ const ServiceHistory = require("../models/ServiceHistory");
 const getBusinessAnalytics = async ({ businessId, days = 30 }) => {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-  const [queueStats, history, serviceBreakdown, dailyVolume] = await Promise.all([
+  const [queueStats, history, departmentBreakdown, dailyVolume] = await Promise.all([
     Queue.aggregate([
       {
         $match: {
@@ -22,17 +22,18 @@ const getBusinessAnalytics = async ({ businessId, days = 30 }) => {
     ServiceHistory.find({
       business: businessId,
       completedAt: { $gte: since },
-    }).populate("service", "name"),
+    }).populate("service", "name").populate({ path: "queueEntry", select: "department", populate: { path: "department", select: "name" } }),
     Queue.aggregate([
       {
         $match: {
           business: businessId,
           joinedAt: { $gte: since },
+          department: { $ne: null },
         },
       },
       {
         $group: {
-          _id: "$service",
+          _id: "$department",
           total: { $sum: 1 },
           completed: {
             $sum: { $cond: [{ $eq: ["$status", "COMPLETED"] }, 1, 0] },
@@ -47,18 +48,18 @@ const getBusinessAnalytics = async ({ businessId, days = 30 }) => {
       },
       {
         $lookup: {
-          from: "services",
+          from: "departments",
           localField: "_id",
           foreignField: "_id",
-          as: "service",
+          as: "department",
         },
       },
-      { $unwind: { path: "$service", preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: "$department", preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 0,
-          serviceId: "$_id",
-          serviceName: { $ifNull: ["$service.name", "Unknown Service"] },
+          departmentId: "$_id",
+          departmentName: { $ifNull: ["$department.name", "Unknown Department"] },
           total: 1,
           completed: 1,
           noShows: 1,
@@ -143,14 +144,14 @@ const getBusinessAnalytics = async ({ businessId, days = 30 }) => {
       ? Math.round(waits.reduce((sum, value) => sum + value, 0) / waits.length)
       : null;
 
-  const servicePerformance = serviceBreakdown.map((item) => {
-    const serviceHistory = history.filter(
+  const departmentPerformance = departmentBreakdown.map((item) => {
+    const departmentHistory = history.filter(
       (record) =>
-        record.service &&
-        String(record.service._id) === String(item.serviceId)
+        record.queueEntry?.department &&
+        String(record.queueEntry.department._id) === String(item.departmentId)
     );
 
-    const serviceDurations = serviceHistory
+    const serviceDurations = departmentHistory
       .map((record) => Number(record.durationMinutes))
       .filter((value) => Number.isFinite(value));
 
@@ -175,7 +176,7 @@ const getBusinessAnalytics = async ({ businessId, days = 30 }) => {
     averageWaitMinutes,
     averageServiceMinutes,
     noShowRate,
-    servicePerformance,
+    departmentPerformance,
     dailyVolume: dailyVolume.map((item) => ({
       date: `${item._id.year}-${String(item._id.month).padStart(2, "0")}-${String(
         item._id.day

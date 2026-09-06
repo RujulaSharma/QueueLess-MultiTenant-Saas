@@ -4,12 +4,21 @@ const {
 
 const getAnalyticsDashboard = async (req, res) => {
   try {
-    const { businessId, days = 30 } = req.query;
+    const requestedBusinessId = req.query.businessId;
+    const businessId = req.user?.businessId;
+    const days = req.query.days;
 
     if (!businessId) {
       return res.status(400).json({
         success: false,
-        message: "businessId is required",
+        message: "Your account is not connected to a business",
+      });
+    }
+
+    if (requestedBusinessId && String(requestedBusinessId) !== String(businessId)) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view analytics for your business",
       });
     }
 
