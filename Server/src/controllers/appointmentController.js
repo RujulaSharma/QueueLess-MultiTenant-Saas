@@ -1,250 +1,396 @@
+const mongoose = require("mongoose");
 const Appointment = require("../models/Appointment");
-const Queue = require("../models/Queue");
-const { emitQueueUpdate } = require("../services/queueService");
+const Business = require("../models/Business");
 const Service = require("../models/Service");
+const Department = require("../models/Department");
+const Queue = require("../models/Queue");
+const Doctor = require("../models/Doctor");
 
-const createAppointment = async (req, res) => {
+const ACTIVE_QUEUE_STATUSES = ["WAITING", "CALLED", "SERVING"];
+
+function dayBounds(dateValue = new Date()) {
+  const d = new Date(dateValue);
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+function emit(io, businessId, event, payload) {
+  if (!io || !businessId) return;
+  io.to(`business:${businessId}`).emit(event, payload);
+}
+
+exports.createAppointment = async (req, res) => {
   try {
-    const { businessId, serviceId, appointmentDate, scheduledTime, notes = "" } = req.body;
+    const { businessId, serviceId, departmentId, doctorId, appointmentDate, scheduledTime, notes, customerId } = req.body;
 
-    if (!businessId || !serviceId || !appointmentDate || !scheduledTime) {
-      return res.status(400).json({
-        success: false,
-        message: "Business, service, date, and time are required",
-      });
+    if (!mongoose.isValidObjectId(businessId)) {
+      return res.status(400).json({ success: false, message: "Invalid hospital." });
+    }
+    if (serviceId && !mongoose.isValidObjectId(serviceId)) {
+      return res.status(400).json({ success: false, message: "Invalid service." });
+    }
+    if (departmentId && !mongoose.isValidObjectId(departmentId)) {
+      return res.status(400).json({ success: false, message: "Invalid department." });
+    }
+    if (doctorId && !mongoose.isValidObjectId(doctorId)) {
+      return res.status(400).json({ success: false, message: "Invalid doctor." });
+    }
+    if (!appointmentDate || !scheduledTime) {
+      return res.status(400).json({ success: false, message: "Appointment date and time are required." });
     }
 
-    const service = await Service.findOne({
-      _id: serviceId,
-      business: businessId,
-      isActive: true,
-    });
+    const business = await Business.findOne({ _id: businessId, isActive: true });
+    if (!business) return res.status(404).json({ success: false, message: "Hospital not found." });
 
-    if (!service) {
-      return res.status(404).json({
-        success: false,
-        message: "Service not found or inactive",
-      });
+    let department = null;
+    let service = null;
+    if (departmentId) {
+      department = await Department.findOne({ _id: departmentId, hospital: businessId, isActive: true });
+      if (!department) return res.status(404).json({ success: false, message: "Department not found." });
+      if (department.legacyService) service = await Service.findOne({ _id: department.legacyService, business: businessId, isActive: true });
+    } else if (serviceId) {
+      service = await Service.findOne({ _id: serviceId, business: businessId, isActive: true });
+      if (service?.department) department = await Department.findById(service.department);
+    }
+
+    if (!service) return res.status(404).json({ success: false, message: "Bookable department not found." });
+
+    let doctor = null;
+    if (doctorId) {
+      doctor = await Doctor.findOne({ _id: doctorId, hospital: businessId, department: department?._id, status: "ACTIVE" })
+        .populate("user", "name email");
+      if (!doctor) return res.status(404).json({ success: false, message: "Selected doctor is not available for this department." });
+    }
+
+    let customer = req.user._id;
+    if (["ADMIN", "STAFF"].includes(req.user.role) && customerId) {
+      if (!mongoose.isValidObjectId(customerId)) {
+        return res.status(400).json({ success: false, message: "Invalid customer ID." });
+      }
+      const User = require("../models/User");
+      const targetCustomer = await User.findOne({
+        _id: customerId,
+        role: "CUSTOMER",
+        isActive: true,
+        businessId,
+      }).select("_id");
+      if (!targetCustomer) {
+        return res.status(404).json({ success: false, message: "Customer not found for this business." });
+      }
+      customer = targetCustomer._id;
+    }
+
+    const duplicate = await Appointment.findOne({
+      doctor: doctor?._id || null,
+      appointmentDate: new Date(appointmentDate),
+      scheduledTime,
+      status: { $nin: ["CANCELLED", "NO_SHOW"] },
+    });
+    if (duplicate) {
+      return res.status(409).json({ success: false, message: "That doctor is already booked for this time. Please choose another slot." });
     }
 
     const appointment = await Appointment.create({
       business: businessId,
-      service: serviceId,
-      customer: req.user._id,
+      doctor: doctor?._id || null,
+      department: department?._id || service.department || null,
+      service: service._id,
+      customer,
       appointmentDate: new Date(appointmentDate),
       scheduledTime,
-      notes,
+      notes: notes || "",
+      status: "CONFIRMED",
     });
 
-    const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate("business", "name category")
+    const populated = await Appointment.findById(appointment._id)
+      .populate("business", "name category address")
       .populate("service", "name averageDuration")
+      .populate("department", "name code")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
       .populate("customer", "name email");
+
+    emit(req.app.get("io"), businessId, "appointment:created", populated);
 
     return res.status(201).json({
       success: true,
-      message: "Appointment created successfully",
-      appointment: populatedAppointment,
+      message: "Appointment booked successfully.",
+      appointment: populated,
     });
   } catch (error) {
-    console.error("Create appointment error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create appointment",
-    });
+    console.error("createAppointment:", error);
+    return res.status(500).json({ success: false, message: "Failed to create appointment." });
   }
 };
 
-const getMyAppointments = async (req, res) => {
+exports.getMyAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find({
-      customer: req.user._id,
-    })
-      .populate("business", "name category")
+    const appointments = await Appointment.find({ customer: req.user._id })
+      .populate("business", "name category address")
       .populate("service", "name averageDuration")
-      .sort({ appointmentDate: 1, createdAt: -1 });
+      .populate("department", "name code")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
+      .populate("queueEntry", "tokenNumber status position estimatedWaitTime")
+      .sort({ appointmentDate: 1, scheduledTime: 1, createdAt: -1 });
 
-    return res.status(200).json({
-      success: true,
-      count: appointments.length,
-      appointments,
-    });
+    return res.json({ success: true, appointments });
   } catch (error) {
-    console.error("Get appointments error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch appointments",
-    });
+    console.error("getMyAppointments:", error);
+    return res.status(500).json({ success: false, message: "Failed to load appointments." });
   }
 };
 
-const getBusinessAppointments = async (req, res) => {
+exports.getBusinessAppointments = async (req, res) => {
   try {
-    const { businessId } = req.params;
-    const { date } = req.query;
+    const businessId = req.user.businessId || req.query.businessId;
+    if (!mongoose.isValidObjectId(businessId)) {
+      return res.status(400).json({ success: false, message: "Invalid business." });
+    }
 
+    // Admin needs the complete hospital schedule, not only today's rows.
+    // An optional ?date=YYYY-MM-DD filter can still be used by future views.
     const filter = { business: businessId };
-
-    if (date) {
-      const start = new Date(`${date}T00:00:00`);
-      const end = new Date(`${date}T23:59:59.999`);
-      filter.appointmentDate = { $gte: start, $lte: end };
+    if (req.query.date) {
+      const { start, end } = dayBounds(req.query.date);
+      filter.appointmentDate = { $gte: start, $lt: end };
     }
 
     const appointments = await Appointment.find(filter)
       .populate("customer", "name email")
       .populate("service", "name averageDuration")
-      .sort({ appointmentDate: 1, scheduledTime: 1 });
+      .populate("department", "name code")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
+      .populate("queueEntry", "tokenNumber status position estimatedWaitTime")
+      .sort({ appointmentDate: 1, scheduledTime: 1, createdAt: 1 });
 
-    return res.status(200).json({
-      success: true,
-      count: appointments.length,
-      appointments,
-    });
+    return res.json({ success: true, appointments });
   } catch (error) {
-    console.error("Get business appointments error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch business appointments",
-    });
+    console.error("getBusinessAppointments:", error);
+    return res.status(500).json({ success: false, message: "Failed to load business appointments." });
   }
 };
 
-const updateAppointmentStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
+async function createQueueEntryForAppointment(appointment, io) {
+  if (appointment.queueEntry) {
+    const existing = await Queue.findById(appointment.queueEntry);
+    if (existing) return existing;
+  }
 
-    const allowedStatuses = [
-      "SCHEDULED",
-      "CONFIRMED",
-      "CHECKED_IN",
-      "COMPLETED",
-      "CANCELLED",
-      "NO_SHOW",
-    ];
+  const activeExisting = await Queue.findOne({
+    business: appointment.business,
+    doctor: appointment.doctor || null,
+    department: appointment.department || null,
+    service: appointment.service,
+    customer: appointment.customer,
+    status: { $in: ACTIVE_QUEUE_STATUSES },
+  });
 
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appointment status",
-      });
-    }
-
-    const appointment = await Appointment.findById(id);
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
-    }
-
-    appointment.status = status;
-
-    if (status === "CHECKED_IN" && !appointment.checkedInAt) {
-      appointment.checkedInAt = new Date();
-
-      const existingQueueEntry = await Queue.findOne({
-        customer: appointment.customer,
-        service: appointment.service,
-        status: { $in: ["WAITING", "CALLED", "SERVING"] },
-      });
-
-      if (!existingQueueEntry) {
-        const latestEntry = await Queue.findOne({
-          business: appointment.business,
-          service: appointment.service,
-        }).sort({ tokenNumber: -1 });
-
-        const tokenNumber = latestEntry ? latestEntry.tokenNumber + 1 : 1;
-
-        const waitingCount = await Queue.countDocuments({
-          business: appointment.business,
-          service: appointment.service,
-          status: "WAITING",
-        });
-
-        const service = await Service.findById(appointment.service);
-
-        const queueEntry = await Queue.create({
-          business: appointment.business,
-          service: appointment.service,
-          customer: appointment.customer,
-          tokenNumber,
-          position: waitingCount + 1,
-          estimatedWaitTime:
-            (waitingCount + 1) * (service?.averageDuration || 15),
-          priority: "HIGH",
-          notes: `Appointment check-in: ${appointment._id}`,
-        });
-
-        const io = req.app.get("io");await emitQueueUpdate(io, appointment.business, appointment.service, "APPOINTMENT_CHECK_IN");
-      }
-    }
-
-    if (status === "COMPLETED" && !appointment.completedAt) {
-      appointment.completedAt = new Date();
-    }
-
+  if (activeExisting) {
+    appointment.queueEntry = activeExisting._id;
+    appointment.status = "CHECKED_IN";
+    appointment.checkedInAt = new Date();
     await appointment.save();
-
-    const populatedAppointment = await Appointment.findById(id)
-      .populate("business", "name category")
-      .populate("service", "name averageDuration")
-      .populate("customer", "name email");
-
-    return res.status(200).json({
-      success: true,
-      message: `Appointment marked as ${status}`,
-      appointment: populatedAppointment,
-    });
-  } catch (error) {
-    console.error("Update appointment status error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to update appointment",
-    });
+    return activeExisting;
   }
-};
 
-const cancelMyAppointment = async (req, res) => {
+  const tokenScope = {
+    business: appointment.business,
+    doctor: appointment.doctor || null,
+    department: appointment.department || null,
+    service: appointment.service,
+  };
+
+  const lastToken = await Queue.findOne(tokenScope)
+    .sort({ tokenNumber: -1 })
+    .select("tokenNumber");
+
+  const service = await Service.findById(appointment.service).select("averageDuration");
+  const waitingCount = await Queue.countDocuments({
+    business: appointment.business,
+    doctor: appointment.doctor || null,
+    department: appointment.department || null,
+    service: appointment.service,
+    status: { $in: ACTIVE_QUEUE_STATUSES },
+  });
+
+  const queueEntry = await Queue.create({
+    business: appointment.business,
+    doctor: appointment.doctor || null,
+    department: appointment.department || null,
+    service: appointment.service,
+    customer: appointment.customer,
+    tokenNumber: (lastToken?.tokenNumber || 0) + 1,
+    status: "WAITING",
+    priority: "HIGH",
+    position: waitingCount + 1,
+    estimatedWaitTime: (waitingCount + 1) * Number(service?.averageDuration || 15),
+    notes: `Appointment check-in: ${appointment._id}`,
+  });
+
+  appointment.queueEntry = queueEntry._id;
+  appointment.status = "CHECKED_IN";
+  appointment.checkedInAt = new Date();
+  await appointment.save();
+
+  emit(io, appointment.business, "queue:updated", {
+    reason: "appointment_checked_in",
+    businessId: appointment.business,
+    doctorId: appointment.doctor || null,
+    departmentId: appointment.department || null,
+    queueEntry,
+  });
+  emit(io, appointment.business, "appointment:updated", {
+    businessId: appointment.business,
+    appointment,
+    queueEntry,
+  });
+
+  return queueEntry;
+}
+
+exports.checkInAppointment = async (req, res) => {
   try {
     const appointment = await Appointment.findOne({
       _id: req.params.id,
       customer: req.user._id,
-      status: { $in: ["SCHEDULED", "CONFIRMED"] },
     });
 
     if (!appointment) {
-      return res.status(404).json({
+      return res.status(404).json({ success: false, message: "Appointment not found." });
+    }
+
+    if (appointment.status === "CHECKED_IN" && appointment.queueEntry) {
+      const existing = await Queue.findById(appointment.queueEntry)
+        .populate("service", "name averageDuration");
+      return res.json({ success: true, message: "Already checked in.", appointment, queueEntry: existing });
+    }
+
+    if (!["SCHEDULED", "CONFIRMED"].includes(appointment.status)) {
+      return res.status(400).json({
         success: false,
-        message: "Cancellable appointment not found",
+        message: `Appointment cannot be checked in from ${appointment.status} status.`,
       });
+    }
+
+    const now = new Date();
+    const appointmentDay = new Date(appointment.appointmentDate);
+    appointmentDay.setHours(0, 0, 0, 0);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+
+    if (appointmentDay.getTime() !== today.getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: "Check-in is available on the appointment date.",
+      });
+    }
+
+    const queueEntry = await createQueueEntryForAppointment(
+      appointment,
+      req.app.get("io")
+    );
+
+    const populated = await Queue.findById(queueEntry._id)
+      .populate("service", "name averageDuration")
+      .populate("customer", "name email");
+
+    return res.json({
+      success: true,
+      message: "Checked in successfully. You are now in the live queue.",
+      appointment,
+      queueEntry: populated,
+    });
+  } catch (error) {
+    console.error("checkInAppointment:", error);
+    return res.status(500).json({ success: false, message: "Failed to check in." });
+  }
+};
+
+exports.updateAppointmentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ["SCHEDULED", "CONFIRMED", "CHECKED_IN", "COMPLETED", "CANCELLED", "NO_SHOW"];
+
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid appointment status." });
+    }
+
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found." });
+    }
+
+    if (status === "CHECKED_IN") {
+      const queueEntry = await createQueueEntryForAppointment(appointment, req.app.get("io"));
+      const populated = await Appointment.findById(appointment._id)
+        .populate("customer", "name email")
+        .populate("service", "name averageDuration")
+        .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
+
+      emit(req.app.get("io"), appointment.business, "appointment:updated", populated);
+
+      return res.json({ success: true, appointment: populated, queueEntry });
+    }
+
+    appointment.status = status;
+    if (status === "COMPLETED") appointment.completedAt = new Date();
+
+    await appointment.save();
+
+    const populated = await Appointment.findById(appointment._id)
+      .populate("customer", "name email")
+      .populate("service", "name averageDuration")
+      .populate("department", "name code")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
+      .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
+
+    emit(req.app.get("io"), appointment.business, "appointment:updated", populated);
+
+    return res.json({ success: true, appointment: populated });
+  } catch (error) {
+    console.error("updateAppointmentStatus:", error);
+    return res.status(500).json({ success: false, message: "Failed to update appointment." });
+  }
+};
+
+exports.cancelMyAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findOne({
+      _id: req.params.id,
+      customer: req.user._id,
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found." });
     }
 
     appointment.status = "CANCELLED";
     await appointment.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Appointment cancelled successfully",
+    if (appointment.queueEntry) {
+      const queueEntry = await Queue.findById(appointment.queueEntry);
+      if (queueEntry) {
+        queueEntry.status = "CANCELLED";
+        await queueEntry.save();
+      }
+    }
+
+    emit(req.app.get("io"), appointment.business, "appointment:updated", {
+      businessId: appointment.business,
       appointment,
     });
+    if (appointment.queueEntry) {
+      const queueEntry = await Queue.findById(appointment.queueEntry);
+      if (queueEntry) {
+        const { emitQueueUpdate } = require("../services/queueService");
+        await emitQueueUpdate(req.app.get("io"), queueEntry.business, queueEntry.service, "APPOINTMENT_CANCELLED", { doctorId: queueEntry.doctor, departmentId: queueEntry.department });
+      }
+    }
+    return res.json({ success: true, message: "Appointment cancelled.", appointment });
   } catch (error) {
-    console.error("Cancel appointment error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to cancel appointment",
-    });
+    console.error("cancelMyAppointment:", error);
+    return res.status(500).json({ success: false, message: "Failed to cancel appointment." });
   }
-};
-
-module.exports = {
-  createAppointment,
-  getMyAppointments,
-  getBusinessAppointments,
-  updateAppointmentStatus,
-  cancelMyAppointment,
 };

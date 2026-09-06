@@ -2,6 +2,20 @@ const mongoose = require("mongoose");
 
 const queueSchema = new mongoose.Schema(
   {
+    doctor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Doctor",
+      default: null,
+      index: true,
+    },
+
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+      index: true,
+    },
+
     business: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",

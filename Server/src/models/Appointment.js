@@ -2,6 +2,20 @@ const mongoose = require("mongoose");
 
 const appointmentSchema = new mongoose.Schema(
   {
+    doctor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Doctor",
+      default: null,
+      index: true,
+    },
+
+    department: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+      index: true,
+    },
+
     business: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Business",
@@ -44,7 +58,12 @@ const appointmentSchema = new mongoose.Schema(
       default: "SCHEDULED",
     },
 
-    notes: {
+    queueEntry: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Queue",
+    default: null,
+  },
+  notes: {
       type: String,
       trim: true,
       default: "",
@@ -68,5 +87,6 @@ const appointmentSchema = new mongoose.Schema(
 appointmentSchema.index({ business: 1, appointmentDate: 1 });
 appointmentSchema.index({ customer: 1, appointmentDate: 1 });
 appointmentSchema.index({ service: 1, appointmentDate: 1 });
+appointmentSchema.index({ doctor: 1, appointmentDate: 1, scheduledTime: 1 });
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

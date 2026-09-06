@@ -3,16 +3,20 @@ const Service = require("../models/Service");
 
 const ACTIVE_STATUSES = ["WAITING", "CALLED", "SERVING"];
 
-const recalculateQueue = async (businessId, serviceId) => {
-  const entries = await Queue.find({
-    business: businessId,
-    service: serviceId,
-    status: { $in: ACTIVE_STATUSES },
-  }).sort({ priority: -1, joinedAt: 1 });
+const buildScope = (businessId, serviceId, scope = {}) => ({
+  business: businessId,
+  service: serviceId,
+  ...(scope.doctorId ? { doctor: scope.doctorId } : {}),
+  ...(scope.departmentId ? { department: scope.departmentId } : {}),
+  status: { $in: ACTIVE_STATUSES },
+});
+
+const recalculateQueue = async (businessId, serviceId, scope = {}) => {
+  const entries = await Queue.find(buildScope(businessId, serviceId, scope))
+    .sort({ priority: -1, joinedAt: 1 });
 
   const service = await Service.findById(serviceId).select("averageDuration");
-  const averageDuration = service?.averageDuration || 15;
-
+  const averageDuration = Number(service?.averageDuration || 15);
   let waitingPosition = 0;
 
   for (const entry of entries) {
@@ -24,25 +28,25 @@ const recalculateQueue = async (businessId, serviceId) => {
       entry.position = 0;
       entry.estimatedWaitTime = 0;
     }
-
     await entry.save();
   }
 
   return entries;
 };
 
-const emitQueueUpdate = async (io, businessId, serviceId, action) => {
+const emitQueueUpdate = async (io, businessId, serviceId, action, scope = {}) => {
   if (!io) return;
-
-  const queue = await recalculateQueue(businessId, serviceId);
+  const queue = await recalculateQueue(businessId, serviceId, scope);
 
   io.to(`business:${businessId}`).emit("queue:updated", {
     action,
     businessId,
     serviceId,
+    doctorId: scope.doctorId || null,
+    departmentId: scope.departmentId || null,
     queue,
     updatedAt: new Date().toISOString(),
   });
 };
 
-module.exports = { recalculateQueue, emitQueueUpdate };
+module.exports = { ACTIVE_STATUSES, recalculateQueue, emitQueueUpdate };
