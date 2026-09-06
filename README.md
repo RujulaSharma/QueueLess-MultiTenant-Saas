@@ -1,4 +1,8 @@
-QueueLess | Multi-Tenant Healthcare SaaS
+# QueueLess | Multi-Tenant Healthcare SaaS
+
+<p align="center">
+  <img src="assets/queueless.png" alt="QueueLess Preview" width="100%">
+</p>
 
 QueueLess is a full-stack healthcare appointment and real-time patient queue management platform built with the MERN stack and Socket.IO.
 
