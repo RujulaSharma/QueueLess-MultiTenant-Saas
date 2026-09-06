@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
 import {
   BarChart3,
   CalendarDays,
@@ -11,6 +11,7 @@ import {
   Plus,
   Building2,
   UserCog,
+  Home,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -57,6 +58,7 @@ export default function AppLayout() {
         </div>
 
         <nav className="nav-list">
+        <Link to="/" className="home-nav-link"><Home size={18} /><span>Home</span></Link>
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
