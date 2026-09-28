@@ -93,7 +93,10 @@ export default function AppLayout() {
           <button
             type="button"
             className="mobile-account-link mobile-logout"
-            onClick={() => { logout(); navigate("/"); }}
+            onClick={() => {
+                logout();
+                window.location.href = "/";
+              }}
           >
             <LogOut size={16} />
             <span>Logout</span>
@@ -118,7 +121,10 @@ export default function AppLayout() {
             </div>
           </button>
 
-          <button className="ghost-button full" onClick={() => { logout(); navigate("/"); }}>
+          <button className="ghost-button full" onClick={() => {
+  logout();
+  window.location.href = "/";
+}}>
             <LogOut size={17} /> Sign out
           </button>
         </div>
