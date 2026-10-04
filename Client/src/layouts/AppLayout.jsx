@@ -12,6 +12,7 @@ import {
   Building2,
   UserCog,
   Home,
+  FolderKanban,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,6 +25,7 @@ export default function AppLayout() {
   const links = isAdmin
     ? [
         { to: "/admin", label: "Hospital Dashboard", icon: LayoutDashboard },
+        { to: "/workspace", label: "Project Workspace", icon: FolderKanban },
         { to: "/admin/business", label: "Hospital Profile", icon: Building2 },
         { to: "/admin/departments", label: "Departments", icon: Building2 },
         { to: "/admin/doctors", label: "Doctors", icon: UserCog },
@@ -34,11 +36,13 @@ export default function AppLayout() {
     : isDoctor
     ? [
         { to: "/dashboard", label: "Clinical Dashboard", icon: LayoutDashboard },
+        { to: "/workspace", label: "Project Workspace", icon: FolderKanban },
         { to: "/appointments", label: "Appointments", icon: CalendarDays },
         { to: "/queue", label: "Patient Queue", icon: ListOrdered },
       ]
     : [
         { to: "/dashboard", label: "Patient Dashboard", icon: LayoutDashboard },
+        { to: "/workspace", label: "Project Workspace", icon: FolderKanban },
         { to: "/book", label: "Book Appointment", icon: Plus },
         { to: "/queue", label: "My Queue", icon: ListOrdered },
         { to: "/appointments", label: "My Appointments", icon: CalendarDays },

@@ -18,6 +18,8 @@ import Departments from "./pages/Departments";
 import Doctors from "./pages/Doctors";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import BusinessManagement from "./pages/BusinessManagement";
+import Workspace from "./pages/Workspace";
+import ProjectDetails from "./pages/ProjectDetails";
 
 export default function App() {
   return (
@@ -35,6 +37,8 @@ export default function App() {
             <Route path="/admin" element={<HospitalAdminDashboard />} />
           </Route>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workspace" element={<Workspace />} />
+          <Route path="/workspace/projects/:id" element={<ProjectDetails />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/appointments/:id" element={<AppointmentDetails />} />

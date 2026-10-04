@@ -20,6 +20,8 @@ const departmentRoutes = require("./routes/departmentRoutes");
 const doctorRoutes = require("./routes/doctorRoutes");
 const doctorDashboardRoutes = require("./routes/doctorDashboardRoutes");
 const adminBusinessRoutes = require("./routes/adminBusinessRoutes");
+const projectRoutes = require("./routes/projectRoutes");
+const taskRoutes = require("./routes/taskRoutes");
 const Doctor = require("./models/Doctor");
 
 dotenv.config();
@@ -54,6 +56,18 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("joinProjectRoom", (projectId) => {
+    if (projectId) {
+      socket.join(`project:${String(projectId)}`);
+    }
+  });
+
+  socket.on("leaveProjectRoom", (projectId) => {
+    if (projectId) {
+      socket.leave(`project:${String(projectId)}`);
+    }
+  });
+
   console.log(`🔌 Client connected: ${socket.id}`);
 
   socket.on("disconnect", () => {
@@ -80,6 +94,8 @@ app.use("/api/admin/departments", departmentRoutes);
 app.use("/api/admin/doctors", doctorRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/doctor/dashboard", doctorDashboardRoutes);
+app.use("/api/projects", projectRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

@@ -37,3 +37,44 @@ export const joinBusinessRoom = (businessId, onUpdate) => {
     client.emit("leaveBusinessRoom", businessId);
   };
 };
+
+export const joinProjectRoom = (projectId, onEvent) => {
+  if (!projectId) return () => {};
+  const client = getSocket();
+
+  const join = () => client.emit("joinProjectRoom", projectId);
+  
+  const handleEvent = (eventName) => (payload) => {
+    onEvent?.(eventName, payload);
+  };
+
+  const events = [
+    "project:updated",
+    "project:deleted",
+    "project:progress_updated",
+    "task:created",
+    "task:updated",
+    "task:status_changed",
+    "task:assigned",
+    "task:comment_added",
+    "task:file_attached",
+    "task:file_deleted",
+    "task:deleted",
+  ];
+
+  client.on("connect", join);
+  events.forEach((evt) => {
+    client.on(evt, handleEvent(evt));
+  });
+
+  if (client.connected) join();
+
+  return () => {
+    client.off("connect", join);
+    events.forEach((evt) => {
+      client.off(evt, handleEvent(evt));
+    });
+    client.emit("leaveProjectRoom", projectId);
+  };
+};
+
