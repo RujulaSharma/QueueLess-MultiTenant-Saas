@@ -110,6 +110,7 @@ export default function Appointments() {
           <div className="appointment-side">
             <span className={statusClass(a.status)}>{a.status.replaceAll("_", " ")}</span>
             {a.queueEntry && <span className="status-badge status-serving"><Radio size={13}/> Token #{a.queueEntry.tokenNumber}</span>}
+            <Link className="button secondary small-button" to={`/appointments/${a._id}`}>Details</Link>
             {!isHospital && a.status === "CONFIRMED" && !a.queueEntry && <button className="button secondary small-button" disabled={busyId===a._id} onClick={() => checkIn(a._id)}><Radio size={15}/> {busyId===a._id ? "Checking in..." : "Check in"}</button>}
             {!isHospital && a.status === "CHECKED_IN" && a.queueEntry && <Link className="button secondary small-button" to="/queue">View live queue</Link>}
             {isHospital && a.status === "CONFIRMED" && <button className="button secondary small-button" disabled={busyId===a._id} onClick={() => setStatus(a._id,"CHECKED_IN")}><Radio size={15}/> Check in</button>}

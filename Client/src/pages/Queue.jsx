@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Clock3, Radio, Ticket, Users, XCircle, Play, CheckCircle2, SkipForward } from "lucide-react";
+import api from "../services/api";
 import { getMyQueue, cancelQueue } from "../services/queueApi";
 import { getBusinessQueue, callNext, startServing, completeService, skipQueue, markNoShow } from "../services/businessApi";
 import { joinBusinessRoom } from "../services/socket";
@@ -22,7 +23,6 @@ export default function Queue() {
     try {
       setError("");
       if (isDoctor) {
-        const { default: api } = await import("../services/api");
         const response = await api.get("/doctor/dashboard");
         setEntries(response.data.queue || []);
         setHistory([]);
@@ -69,7 +69,6 @@ export default function Queue() {
     const runDoctor = async (key, method, url, message) => {
       try {
         setBusy(key); setError("");
-        const { default: api } = await import("../services/api");
         await api[method](url);
         await load();
       } catch (err) { setError(err.response?.data?.message || "Queue action failed"); }

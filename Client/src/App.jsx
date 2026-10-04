@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Queue from "./pages/Queue";
 import Appointments from "./pages/Appointments";
+import AppointmentDetails from "./pages/AppointmentDetails";
 import Analytics from "./pages/Analytics";
 import BookAppointment from "./pages/BookAppointment";
 import Profile from "./pages/Profile";
@@ -17,6 +18,7 @@ import Departments from "./pages/Departments";
 import Doctors from "./pages/Doctors";
 import DoctorDashboard from "./pages/DoctorDashboard";
 import BusinessManagement from "./pages/BusinessManagement";
+
 export default function App() {
   return (
     <Routes>
@@ -26,15 +28,16 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
-        <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
-          <Route path="/admin/business" element={<BusinessManagement />} />
-          <Route path="/admin/departments" element={<Departments />} />
-          <Route path="/admin/doctors" element={<Doctors />} />
-          <Route path="/admin" element={<HospitalAdminDashboard />} />
-        </Route>
-        <Route path="/dashboard" element={<Dashboard />} />
+          <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+            <Route path="/admin/business" element={<BusinessManagement />} />
+            <Route path="/admin/departments" element={<Departments />} />
+            <Route path="/admin/doctors" element={<Doctors />} />
+            <Route path="/admin" element={<HospitalAdminDashboard />} />
+          </Route>
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/queue" element={<Queue />} />
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/appointments/:id" element={<AppointmentDetails />} />
           <Route path="/book" element={<BookAppointment />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/profile" element={<Profile />} />

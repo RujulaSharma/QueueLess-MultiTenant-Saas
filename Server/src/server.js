@@ -43,8 +43,17 @@ const io = new Server(server, {
 
 io.on("connection", (socket) => {
   socket.on("joinBusinessRoom", (businessId) => {
-    if (businessId) socket.join(`business:${businessId}`);
+    if (businessId) {
+      socket.join(`business:${String(businessId)}`);
+    }
   });
+
+  socket.on("leaveBusinessRoom", (businessId) => {
+    if (businessId) {
+      socket.leave(`business:${String(businessId)}`);
+    }
+  });
+
   console.log(`🔌 Client connected: ${socket.id}`);
 
   socket.on("disconnect", () => {

@@ -222,12 +222,15 @@ exports.updateAppointmentStatus = async (req, res) => {
     if (!doctor) return res.status(404).json({ success: false, message: "Active doctor profile not found." });
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: "Invalid appointment id." });
 
-    const allowed = ["CONFIRMED", "NO_SHOW", "CANCELLED"];
-    if (!allowed.includes(req.body.status)) return res.status(400).json({ success: false, message: "Doctor can only confirm, cancel or mark an appointment as no-show." });
+    const allowed = ["CONFIRMED", "NO_SHOW", "CANCELLED", "COMPLETED"];
+    if (!allowed.includes(req.body.status)) {
+      return res.status(400).json({ success: false, message: "Invalid appointment status." });
+    }
 
     const appointment = await Appointment.findOne({ _id: req.params.id, business: doctor.hospital, department: doctor.department });
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found in your department." });
     appointment.status = req.body.status;
+    if (req.body.status === "COMPLETED") appointment.completedAt = new Date();
     await appointment.save();
 
     const populated = await Appointment.findById(appointment._id)

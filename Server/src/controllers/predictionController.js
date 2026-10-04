@@ -19,6 +19,14 @@ const getQueuePrediction = async (req, res) => {
       });
     }
 
+    const validService = await Service.findOne({ _id: resolvedServiceId, business: businessId, isActive: true });
+    if (!validService) {
+      return res.status(404).json({
+        success: false,
+        message: "Department or service not found for this hospital",
+      });
+    }
+
     if (queueId) {
       const queueEntry = await Queue.findById(queueId);
 

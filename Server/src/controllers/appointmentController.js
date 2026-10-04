@@ -83,14 +83,21 @@ exports.createAppointment = async (req, res) => {
       customer = targetCustomer._id;
     }
 
-    const duplicate = await Appointment.findOne({
-      doctor: doctor?._id || null,
+    const duplicateQuery = {
+      business: businessId,
       appointmentDate: new Date(appointmentDate),
       scheduledTime,
       status: { $nin: ["CANCELLED", "NO_SHOW"] },
-    });
+    };
+    if (doctor?._id) {
+      duplicateQuery.doctor = doctor._id;
+    } else if (department?._id || service.department) {
+      duplicateQuery.department = department?._id || service.department;
+    }
+
+    const duplicate = await Appointment.findOne(duplicateQuery);
     if (duplicate) {
-      return res.status(409).json({ success: false, message: "That doctor is already booked for this time. Please choose another slot." });
+      return res.status(409).json({ success: false, message: "That doctor or slot is already booked for this time. Please choose another slot." });
     }
 
     const appointment = await Appointment.create({
@@ -142,15 +149,54 @@ exports.getMyAppointments = async (req, res) => {
   }
 };
 
-exports.getBusinessAppointments = async (req, res) => {
+exports.getAppointmentById = async (req, res) => {
   try {
-    const businessId = req.user.businessId || req.query.businessId;
-    if (!mongoose.isValidObjectId(businessId)) {
-      return res.status(400).json({ success: false, message: "Invalid business." });
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: "Invalid appointment ID." });
     }
 
-    // Admin needs the complete hospital schedule, not only today's rows.
-    // An optional ?date=YYYY-MM-DD filter can still be used by future views.
+    const appointment = await Appointment.findById(id)
+      .populate("business", "name category address phone email")
+      .populate("service", "name averageDuration price")
+      .populate("department", "name code description averageDuration consultationFee")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
+      .populate("customer", "name email")
+      .populate("queueEntry", "tokenNumber status position estimatedWaitTime joinedAt calledAt serviceStartedAt completedAt");
+
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: "Appointment not found." });
+    }
+
+    if (req.user.role === "CUSTOMER") {
+      if (String(appointment.customer?._id || appointment.customer) !== String(req.user._id)) {
+        return res.status(403).json({ success: false, message: "You do not have permission to view this appointment." });
+      }
+    } else if (req.user.role === "DOCTOR") {
+      const doctor = await Doctor.findOne({ user: req.user._id });
+      if (!doctor || (appointment.doctor && String(appointment.doctor?._id || appointment.doctor) !== String(doctor._id))) {
+        return res.status(403).json({ success: false, message: "You do not have permission to view this appointment." });
+      }
+    } else if (["ADMIN", "STAFF"].includes(req.user.role)) {
+      if (req.user.businessId && String(appointment.business?._id || appointment.business) !== String(req.user.businessId)) {
+        return res.status(403).json({ success: false, message: "You do not have permission to view this appointment." });
+      }
+    }
+
+    return res.json({ success: true, appointment });
+  } catch (error) {
+    console.error("getAppointmentById:", error);
+    return res.status(500).json({ success: false, message: "Failed to load appointment details." });
+  }
+};
+
+exports.getBusinessAppointments = async (req, res) => {
+  try {
+    const businessId = req.user.businessId;
+    if (!businessId || !mongoose.isValidObjectId(businessId)) {
+      return res.status(400).json({ success: false, message: "Your account is not connected to a hospital." });
+    }
+
     const filter = { business: businessId };
     if (req.query.date) {
       const { start, end } = dayBounds(req.query.date);
@@ -317,7 +363,10 @@ exports.updateAppointmentStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid appointment status." });
     }
 
-    const appointment = await Appointment.findById(req.params.id);
+    const filter = { _id: req.params.id };
+    if (req.user.businessId) filter.business = req.user.businessId;
+
+    const appointment = await Appointment.findOne(filter);
     if (!appointment) {
       return res.status(404).json({ success: false, message: "Appointment not found." });
     }
@@ -327,6 +376,8 @@ exports.updateAppointmentStatus = async (req, res) => {
       const populated = await Appointment.findById(appointment._id)
         .populate("customer", "name email")
         .populate("service", "name averageDuration")
+        .populate("department", "name code")
+        .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
         .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
 
       emit(req.app.get("io"), appointment.business, "appointment:updated", populated);

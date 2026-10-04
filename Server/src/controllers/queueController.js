@@ -19,10 +19,18 @@ const joinQueue = async (req, res, next) => {
     const tokenNumber = latest ? latest.tokenNumber + 1 : 1;
     const waitingCount = await Queue.countDocuments({ business:businessId, service:resolvedServiceId, status:"WAITING" });
     const queueEntry = await Queue.create({ business:businessId, department:department?._id || service.department || null, service:resolvedServiceId, customer:req.user._id, tokenNumber, position:waitingCount+1, estimatedWaitTime:(waitingCount+1)*service.averageDuration, priority, notes });
-    const populated = await Queue.findById(queueEntry._id).populate("customer","name email").populate("service","name averageDuration").populate("department","name code")
-      .populate({ path:"doctor", populate:{ path:"user", select:"name email" } });
-    req.app.get("io").to(`business:${businessId}`).emit("queue:updated", { type:"JOINED", queue:populated });
-    res.status(201).json({ success:true, message:"Successfully joined the queue", queue:populated });
+    const populated = await Queue.findById(queueEntry._id)
+      .populate("customer", "name email")
+      .populate("service", "name averageDuration")
+      .populate("department", "name code")
+      .populate({ path: "doctor", populate: { path: "user", select: "name email" } });
+
+    await emitQueueUpdate(req.app.get("io"), businessId, resolvedServiceId, "JOINED", {
+      doctorId: queueEntry.doctor,
+      departmentId: queueEntry.department,
+    });
+
+    res.status(201).json({ success: true, message: "Successfully joined the queue", queue: populated });
   } catch (error) { next(error); }
 };
 
