@@ -135,32 +135,6 @@ export default function Workspace() {
     });
   }, [projects, activeTab, categoryFilter, priorityFilter, searchQuery]);
 
-  const getPriorityBadgeClass = (priority) => {
-    switch (priority) {
-      case "URGENT":
-        return "badge-danger";
-      case "HIGH":
-        return "badge-warning";
-      case "MEDIUM":
-        return "badge-info";
-      default:
-        return "badge-secondary";
-    }
-  };
-
-  const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "COMPLETED":
-        return "badge-success";
-      case "IN_PROGRESS":
-        return "badge-primary";
-      case "ON_HOLD":
-        return "badge-warning";
-      default:
-        return "badge-secondary";
-    }
-  };
-
   const formatDeadline = (deadlineDate) => {
     if (!deadlineDate) return null;
     const date = new Date(deadlineDate);
@@ -181,174 +155,59 @@ export default function Workspace() {
 
   const summary = dashboard?.summary || {};
   const tasksByStatus = dashboard?.tasksByStatus || {};
-  const upcomingTasks = dashboard?.upcomingTasks || [];
   const myAssignedTasks = dashboard?.myAssignedTasks || [];
 
   return (
-    <div className="workspace-page" style={{ padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+    <div className="workspace-page" style={{ maxWidth: "1400px", margin: "0 auto" }}>
       {/* Page Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-          gap: "16px",
-          marginBottom: "24px",
-        }}
-      >
+      <div className="page-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "10px",
-                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-              }}
-            >
-              <FolderKanban size={22} />
-            </div>
-            <h1 style={{ fontSize: "26px", fontWeight: "700", margin: 0, color: "#111827" }}>
-              Project Workspace
-            </h1>
-          </div>
-          <p style={{ margin: 0, color: "#4b5563", fontSize: "14px" }}>
-            Collaborate on initiatives, track tasks, manage deadlines, and sync team progress in real time.
-          </p>
+          <span className="eyebrow"><FolderKanban size={14} /> Project Workspace</span>
+          <h1>Initiatives & Operations</h1>
+          <p>Collaborate on hospital workflows, track tasks, manage deadlines, and sync in real time.</p>
         </div>
 
         <button
-          className="primary-button"
+          className="button primary"
           onClick={() => setShowCreateModal(true)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "10px 18px",
-            fontWeight: "600",
-            fontSize: "14px",
-          }}
         >
-          <Plus size={18} />
+          <Plus size={17} />
           New Project
         </button>
       </div>
 
       {/* Workspace Metric KPI Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          marginBottom: "28px",
-        }}
-      >
-        <div
-          className="stat-card"
-          style={{
-            background: "#fff",
-            padding: "18px 20px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>Active Projects</span>
-            <span
-              style={{
-                background: "#ecfdf5",
-                color: "#059669",
-                padding: "4px 8px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: "600",
-              }}
-            >
-              {summary.totalProjects || 0} Total
-            </span>
-          </div>
-          <div style={{ fontSize: "28px", fontWeight: "700", color: "#111827", marginTop: "8px" }}>
-            {summary.activeProjects || 0}
-          </div>
-          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-            {summary.completedProjects || 0} completed
-          </div>
+      <section className="stat-grid" style={{ marginBottom: "26px" }}>
+        <div className="stat-card">
+          <div className="stat-icon"><FolderKanban size={18} /></div>
+          <span>Active Projects</span>
+          <strong>{summary.activeProjects || 0}</strong>
+          <small>{summary.completedProjects || 0} completed · {summary.totalProjects || 0} total</small>
         </div>
 
-        <div
-          className="stat-card"
-          style={{
-            background: "#fff",
-            padding: "18px 20px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>Tasks In Progress</span>
-            <div style={{ color: "#3b82f6" }}><Clock size={18} /></div>
-          </div>
-          <div style={{ fontSize: "28px", fontWeight: "700", color: "#3b82f6", marginTop: "8px" }}>
-            {tasksByStatus.IN_PROGRESS || 0}
-          </div>
-          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-            {tasksByStatus.TODO || 0} To-Do • {tasksByStatus.IN_REVIEW || 0} In Review
-          </div>
+        <div className="stat-card">
+          <div className="stat-icon"><Clock size={18} /></div>
+          <span>Tasks In Progress</span>
+          <strong>{tasksByStatus.IN_PROGRESS || 0}</strong>
+          <small>{tasksByStatus.TODO || 0} To-Do · {tasksByStatus.IN_REVIEW || 0} In Review</small>
         </div>
 
-        <div
-          className="stat-card"
-          style={{
-            background: "#fff",
-            padding: "18px 20px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>Completion Rate</span>
-            <div style={{ color: "#10b981" }}><TrendingUp size={18} /></div>
-          </div>
-          <div style={{ fontSize: "28px", fontWeight: "700", color: "#10b981", marginTop: "8px" }}>
-            {summary.completionRate || 0}%
-          </div>
-          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-            {tasksByStatus.DONE || 0} of {summary.totalTasks || 0} tasks done
-          </div>
+        <div className="stat-card">
+          <div className="stat-icon"><TrendingUp size={18} /></div>
+          <span>Completion Rate</span>
+          <strong>{summary.completionRate || 0}%</strong>
+          <small>{tasksByStatus.DONE || 0} of {summary.totalTasks || 0} tasks finished</small>
         </div>
 
-        <div
-          className="stat-card"
-          style={{
-            background: "#fff",
-            padding: "18px 20px",
-            borderRadius: "12px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "13px", fontWeight: "600", color: "#6b7280" }}>Assigned To Me</span>
-            <div style={{ color: "#8b5cf6" }}><ListTodo size={18} /></div>
-          </div>
-          <div style={{ fontSize: "28px", fontWeight: "700", color: "#8b5cf6", marginTop: "8px" }}>
-            {summary.myAssignedCount || 0}
-          </div>
-          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
-            Directly assigned action items
-          </div>
+        <div className="stat-card">
+          <div className="stat-icon"><ListTodo size={18} /></div>
+          <span>Assigned To Me</span>
+          <strong>{summary.myAssignedCount || 0}</strong>
+          <small>Action items for your attention</small>
         </div>
-      </div>
+      </section>
 
-      {/* Tabs and Filters */}
+      {/* Tabs and Filters Bar */}
       <div
         style={{
           display: "flex",
@@ -356,75 +215,36 @@ export default function Workspace() {
           alignItems: "center",
           flexWrap: "wrap",
           gap: "14px",
-          marginBottom: "20px",
-          background: "#fff",
-          padding: "12px 16px",
-          borderRadius: "12px",
-          border: "1px solid #e5e7eb",
+          marginBottom: "24px",
+          background: "var(--warm-cream)",
+          padding: "12px 18px",
+          borderRadius: "var(--radius-card)",
+          border: "1px solid var(--border-subtle)",
+          boxShadow: "var(--shadow-xs)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
           <button
             onClick={() => setActiveTab("all")}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              background: activeTab === "all" ? "#10b981" : "#f3f4f6",
-              color: activeTab === "all" ? "#fff" : "#4b5563",
-              transition: "all 0.15s ease",
-            }}
+            className={`button ${activeTab === "all" ? "primary small" : "secondary small"}`}
           >
             All Projects ({projects.length})
           </button>
           <button
             onClick={() => setActiveTab("active")}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              background: activeTab === "active" ? "#10b981" : "#f3f4f6",
-              color: activeTab === "active" ? "#fff" : "#4b5563",
-              transition: "all 0.15s ease",
-            }}
+            className={`button ${activeTab === "active" ? "primary small" : "secondary small"}`}
           >
             Active ({summary.activeProjects || 0})
           </button>
           <button
             onClick={() => setActiveTab("completed")}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              background: activeTab === "completed" ? "#10b981" : "#f3f4f6",
-              color: activeTab === "completed" ? "#fff" : "#4b5563",
-              transition: "all 0.15s ease",
-            }}
+            className={`button ${activeTab === "completed" ? "primary small" : "secondary small"}`}
           >
             Completed ({summary.completedProjects || 0})
           </button>
           <button
             onClick={() => setActiveTab("mytasks")}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "8px",
-              border: "none",
-              fontSize: "13px",
-              fontWeight: "600",
-              cursor: "pointer",
-              background: activeTab === "mytasks" ? "#10b981" : "#f3f4f6",
-              color: activeTab === "mytasks" ? "#fff" : "#4b5563",
-              transition: "all 0.15s ease",
-            }}
+            className={`button ${activeTab === "mytasks" ? "primary small" : "secondary small"}`}
           >
             My Tasks ({summary.myAssignedCount || 0})
           </button>
@@ -432,10 +252,10 @@ export default function Workspace() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", flexGrow: 1, justifyContent: "flex-end" }}>
           {/* Search Box */}
-          <div style={{ position: "relative", minWidth: "220px" }}>
+          <div style={{ position: "relative", minWidth: "200px" }}>
             <Search
-              size={16}
-              style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }}
+              size={15}
+              style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-subtle)" }}
             />
             <input
               type="text"
@@ -443,12 +263,8 @@ export default function Workspace() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                width: "100%",
-                padding: "8px 12px 8px 34px",
-                borderRadius: "8px",
-                border: "1px solid #d1d5db",
+                paddingLeft: "32px",
                 fontSize: "13px",
-                outline: "none",
               }}
             />
           </div>
@@ -457,15 +273,7 @@ export default function Workspace() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid #d1d5db",
-              fontSize: "13px",
-              background: "#fff",
-              outline: "none",
-              cursor: "pointer",
-            }}
+            style={{ width: "auto", fontSize: "13px" }}
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>
@@ -478,15 +286,7 @@ export default function Workspace() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid #d1d5db",
-              fontSize: "13px",
-              background: "#fff",
-              outline: "none",
-              cursor: "pointer",
-            }}
+            style={{ width: "auto", fontSize: "13px" }}
           >
             <option value="ALL">Priority: All</option>
             <option value="URGENT">Urgent</option>
@@ -499,41 +299,28 @@ export default function Workspace() {
 
       {/* Main Content Area */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "#6b7280" }}>
-          <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
+        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
           <p>Loading project workspace...</p>
         </div>
       ) : error ? (
-        <div
-          style={{
-            background: "#fef2f2",
-            color: "#dc2626",
-            padding: "16px 20px",
-            borderRadius: "8px",
-            border: "1px solid #fee2e2",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            marginBottom: "20px",
-          }}
-        >
-          <AlertCircle size={20} />
+        <div className="error-box page-error">
+          <AlertCircle size={18} />
           <span>{error}</span>
         </div>
       ) : activeTab === "mytasks" ? (
         /* My Assigned Tasks Tab View */
-        <div style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "20px" }}>
-          <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", color: "#111827" }}>
+        <div className="panel" style={{ padding: "24px" }}>
+          <h2 style={{ fontSize: "18px", marginBottom: "16px" }}>
             My Assigned Tasks ({myAssignedTasks.length})
           </h2>
           {myAssignedTasks.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7280" }}>
-              <CheckSquare size={40} style={{ margin: "0 auto 10px", color: "#9ca3af" }} />
-              <p style={{ margin: 0, fontWeight: "500" }}>You have no tasks assigned right now.</p>
-              <p style={{ fontSize: "13px", color: "#9ca3af" }}>Pick tasks from any project workspace board!</p>
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
+              <CheckSquare size={38} style={{ margin: "0 auto 10px", color: "var(--text-subtle)" }} />
+              <p style={{ margin: 0, fontWeight: "600" }}>You have no tasks assigned right now.</p>
+              <p style={{ fontSize: "13px", color: "var(--text-subtle)" }}>Pick tasks from any project workspace board!</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gap: "12px" }}>
+            <div style={{ display: "grid", gap: "10px" }}>
               {myAssignedTasks.map((t) => (
                 <div
                   key={t._id}
@@ -542,9 +329,9 @@ export default function Workspace() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "14px 16px",
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    background: "#f9fafb",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--border-subtle)",
+                    background: "var(--cream-light)",
                     flexWrap: "wrap",
                     gap: "12px",
                   }}
@@ -557,17 +344,17 @@ export default function Workspace() {
                         borderRadius: "50%",
                         background:
                           t.status === "DONE"
-                            ? "#10b981"
+                            ? "var(--success)"
                             : t.status === "IN_PROGRESS"
-                            ? "#3b82f6"
+                            ? "var(--primary-green)"
                             : t.status === "IN_REVIEW"
-                            ? "#f59e0b"
-                            : "#9ca3af",
+                            ? "var(--warning)"
+                            : "var(--text-subtle)",
                       }}
                     />
                     <div>
-                      <div style={{ fontWeight: "600", fontSize: "15px", color: "#111827" }}>{t.title}</div>
-                      <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>
+                      <div style={{ fontWeight: "700", fontSize: "14px", color: "var(--text-primary)" }}>{t.title}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
                         Project: <strong>{t.projectId?.name || "Workspace"}</strong> • Status: {t.status}
                       </div>
                     </div>
@@ -575,37 +362,25 @@ export default function Workspace() {
 
                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                     {t.deadline && (
-                      <span style={{ fontSize: "12px", color: "#6b7280", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Calendar size={14} />
+                      <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <Calendar size={13} />
                         {new Date(t.deadline).toLocaleDateString()}
                       </span>
                     )}
                     <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        padding: "3px 8px",
-                        borderRadius: "4px",
-                        background:
-                          t.priority === "URGENT"
-                            ? "#fee2e2"
-                            : t.priority === "HIGH"
-                            ? "#fef3c7"
-                            : "#e0f2fe",
-                        color:
-                          t.priority === "URGENT"
-                            ? "#b91c1c"
-                            : t.priority === "HIGH"
-                            ? "#b45309"
-                            : "#0369a1",
-                      }}
+                      className={`badge ${
+                        t.priority === "URGENT"
+                          ? "badge-danger"
+                          : t.priority === "HIGH"
+                          ? "badge-warning"
+                          : "badge-info"
+                      }`}
                     >
                       {t.priority}
                     </span>
                     <Link
                       to={`/workspace/projects/${t.projectId?._id || t.projectId}`}
-                      className="secondary-button"
-                      style={{ padding: "6px 12px", fontSize: "12px" }}
+                      className="button secondary small"
                     >
                       View Board
                     </Link>
@@ -617,25 +392,24 @@ export default function Workspace() {
         </div>
       ) : filteredProjects.length === 0 ? (
         <div
+          className="panel"
           style={{
-            background: "#fff",
-            borderRadius: "12px",
-            border: "1px dashed #d1d5db",
+            borderStyle: "dashed",
             padding: "50px 20px",
             textAlign: "center",
           }}
         >
-          <FolderKanban size={48} style={{ color: "#9ca3af", margin: "0 auto 12px" }} />
-          <h3 style={{ fontSize: "18px", fontWeight: "600", color: "#111827", marginBottom: "6px" }}>
+          <FolderKanban size={44} style={{ color: "var(--text-subtle)", margin: "0 auto 12px" }} />
+          <h3 style={{ fontSize: "18px", marginBottom: "6px" }}>
             No projects found
           </h3>
-          <p style={{ color: "#6b7280", fontSize: "14px", maxWidth: "400px", margin: "0 auto 18px" }}>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px", maxWidth: "420px", margin: "0 auto 20px" }}>
             {searchQuery
               ? "No projects matched your search criteria. Try a different search term."
               : "Get started by creating your first collaborative project workspace!"}
           </p>
-          <button className="primary-button" onClick={() => setShowCreateModal(true)}>
-            <Plus size={16} style={{ marginRight: "6px" }} />
+          <button className="button primary" onClick={() => setShowCreateModal(true)}>
+            <Plus size={16} />
             Create Project
           </button>
         </div>
@@ -657,38 +431,34 @@ export default function Workspace() {
             return (
               <div
                 key={project._id}
+                className="project-card"
                 style={{
-                  background: "#fff",
-                  borderRadius: "14px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
                   display: "flex",
                   flexDirection: "column",
                   overflow: "hidden",
-                  transition: "transform 0.15s ease, box-shadow 0.15s ease",
                 }}
-                className="project-card"
               >
-                <div style={{ padding: "20px", flexGrow: 1 }}>
+                <div style={{ padding: "22px", flexGrow: 1 }}>
                   {/* Top tags row */}
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: "12px",
+                      marginBottom: "14px",
                     }}
                   >
                     <span
                       style={{
                         fontSize: "11px",
-                        fontWeight: "700",
+                        fontWeight: "750",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px",
+                        letterSpacing: "0.06em",
                         padding: "3px 8px",
                         borderRadius: "6px",
-                        background: "#f3f4f6",
-                        color: "#4b5563",
+                        background: "var(--pistachio-soft)",
+                        color: "var(--primary-forest)",
+                        border: "1px solid var(--border-green)",
                       }}
                     >
                       {project.category || "General"}
@@ -696,50 +466,24 @@ export default function Workspace() {
 
                     <div style={{ display: "flex", gap: "6px" }}>
                       <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          padding: "3px 8px",
-                          borderRadius: "6px",
-                          background:
-                            project.priority === "URGENT"
-                              ? "#fee2e2"
-                              : project.priority === "HIGH"
-                              ? "#fef3c7"
-                              : project.priority === "MEDIUM"
-                              ? "#e0f2fe"
-                              : "#f3f4f6",
-                          color:
-                            project.priority === "URGENT"
-                              ? "#b91c1c"
-                              : project.priority === "HIGH"
-                              ? "#b45309"
-                              : project.priority === "MEDIUM"
-                              ? "#0369a1"
-                              : "#4b5563",
-                        }}
+                        className={`badge ${
+                          project.priority === "URGENT"
+                            ? "badge-danger"
+                            : project.priority === "HIGH"
+                            ? "badge-warning"
+                            : "badge-info"
+                        }`}
                       >
                         {project.priority}
                       </span>
                       <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          padding: "3px 8px",
-                          borderRadius: "6px",
-                          background:
-                            project.status === "COMPLETED"
-                              ? "#d1fae5"
-                              : project.status === "IN_PROGRESS"
-                              ? "#dbeafe"
-                              : "#f3f4f6",
-                          color:
-                            project.status === "COMPLETED"
-                              ? "#065f46"
-                              : project.status === "IN_PROGRESS"
-                              ? "#1e40af"
-                              : "#374151",
-                        }}
+                        className={`badge ${
+                          project.status === "COMPLETED"
+                            ? "badge-success"
+                            : project.status === "IN_PROGRESS"
+                            ? "badge-info"
+                            : "badge-secondary"
+                        }`}
                       >
                         {project.status === "IN_PROGRESS" ? "Active" : project.status}
                       </span>
@@ -754,9 +498,9 @@ export default function Workspace() {
                     <h3
                       style={{
                         fontSize: "18px",
-                        fontWeight: "700",
-                        color: "#111827",
-                        margin: "0 0 6px",
+                        fontWeight: "750",
+                        color: "var(--text-primary)",
+                        margin: "0 0 8px",
                         lineHeight: 1.3,
                       }}
                     >
@@ -766,7 +510,7 @@ export default function Workspace() {
                   <p
                     style={{
                       fontSize: "13px",
-                      color: "#6b7280",
+                      color: "var(--text-muted)",
                       margin: "0 0 16px",
                       lineHeight: 1.5,
                       display: "-webkit-box",
@@ -785,8 +529,8 @@ export default function Workspace() {
                         display: "flex",
                         justifyContent: "space-between",
                         fontSize: "12px",
-                        fontWeight: "600",
-                        color: "#4b5563",
+                        fontWeight: "650",
+                        color: "var(--primary-forest)",
                         marginBottom: "6px",
                       }}
                     >
@@ -796,10 +540,11 @@ export default function Workspace() {
                     <div
                       style={{
                         width: "100%",
-                        height: "8px",
-                        background: "#e5e7eb",
-                        borderRadius: "999px",
+                        height: "7px",
+                        background: "var(--pistachio-light)",
+                        borderRadius: "var(--radius-pill)",
                         overflow: "hidden",
+                        border: "1px solid var(--border-green)",
                       }}
                     >
                       <div
@@ -808,9 +553,9 @@ export default function Workspace() {
                           height: "100%",
                           background:
                             progress === 100
-                              ? "#10b981"
-                              : "linear-gradient(90deg, #10b981 0%, #3b82f6 100%)",
-                          borderRadius: "999px",
+                              ? "var(--success)"
+                              : "linear-gradient(90deg, var(--primary-green) 0%, var(--primary-forest) 100%)",
+                          borderRadius: "var(--radius-pill)",
                           transition: "width 0.4s ease",
                         }}
                       />
@@ -824,13 +569,13 @@ export default function Workspace() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       fontSize: "12px",
-                      color: "#6b7280",
+                      color: "var(--text-muted)",
                       paddingTop: "12px",
-                      borderTop: "1px solid #f3f4f6",
+                      borderTop: "1px solid var(--border-subtle)",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <CheckCircle2 size={15} style={{ color: "#10b981" }} />
+                      <CheckCircle2 size={15} style={{ color: "var(--primary-green)" }} />
                       <span>
                         {doneTasks}/{totalTasks} Tasks done
                       </span>
@@ -843,14 +588,14 @@ export default function Workspace() {
                           alignItems: "center",
                           gap: "4px",
                           color: deadlineInfo.isOverdue
-                            ? "#ef4444"
+                            ? "var(--danger)"
                             : deadlineInfo.isDueSoon
-                            ? "#f59e0b"
-                            : "#6b7280",
-                          fontWeight: deadlineInfo.isOverdue || deadlineInfo.isDueSoon ? "600" : "400",
+                            ? "var(--warning)"
+                            : "var(--text-muted)",
+                          fontWeight: deadlineInfo.isOverdue || deadlineInfo.isDueSoon ? "700" : "500",
                         }}
                       >
-                        <Clock size={14} />
+                        <Clock size={13} />
                         <span>{deadlineInfo.text}</span>
                       </div>
                     ) : (
@@ -862,32 +607,32 @@ export default function Workspace() {
                 {/* Footer with Members and CTA */}
                 <div
                   style={{
-                    background: "#f9fafb",
-                    padding: "12px 20px",
-                    borderTop: "1px solid #e5e7eb",
+                    background: "var(--cream-light)",
+                    padding: "12px 22px",
+                    borderTop: "1px solid var(--border-subtle)",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <div style={{ display: "flex", marginLeft: "4px" }}>
+                    <div style={{ display: "flex" }}>
                       {(project.members || []).slice(0, 4).map((m, idx) => (
                         <div
                           key={m.user?._id || idx}
-                          title={m.user?.name || "Member"}
+                          title={`${m.user?.name || "Member"} (${m.role})`}
                           style={{
                             width: "28px",
                             height: "28px",
                             borderRadius: "50%",
-                            background: "#10b981",
-                            color: "#fff",
+                            background: "var(--primary-forest)",
+                            color: "#ffffff",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: "11px",
-                            fontWeight: "700",
-                            border: "2px solid #fff",
+                            fontWeight: "750",
+                            border: "2px solid var(--warm-cream)",
                             marginLeft: idx > 0 ? "-8px" : "0",
                           }}
                         >
@@ -900,14 +645,14 @@ export default function Workspace() {
                             width: "28px",
                             height: "28px",
                             borderRadius: "50%",
-                            background: "#9ca3af",
-                            color: "#fff",
+                            background: "var(--text-subtle)",
+                            color: "#ffffff",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             fontSize: "10px",
                             fontWeight: "700",
-                            border: "2px solid #fff",
+                            border: "2px solid var(--warm-cream)",
                             marginLeft: "-8px",
                           }}
                         >
@@ -924,8 +669,8 @@ export default function Workspace() {
                       alignItems: "center",
                       gap: "6px",
                       fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#059669",
+                      fontWeight: "700",
+                      color: "var(--primary-forest)",
                       textDecoration: "none",
                     }}
                   >
@@ -948,7 +693,8 @@ export default function Workspace() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(23, 35, 31, 0.45)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -957,13 +703,12 @@ export default function Workspace() {
           }}
         >
           <div
+            className="panel"
             style={{
-              background: "#fff",
-              borderRadius: "14px",
               maxWidth: "520px",
               width: "100%",
-              padding: "24px",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              padding: "26px",
+              boxShadow: "var(--shadow-modal)",
             }}
           >
             <div
@@ -971,20 +716,17 @@ export default function Workspace() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "18px",
+                marginBottom: "20px",
               }}
             >
-              <h2 style={{ fontSize: "19px", fontWeight: "700", margin: 0, color: "#111827" }}>
+              <h2 style={{ fontSize: "19px", fontWeight: "750", margin: 0, color: "var(--text-primary)" }}>
                 Create New Project
               </h2>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
                 style={{
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "#6b7280",
+                  color: "var(--text-muted)",
                 }}
               >
                 <X size={20} />
@@ -992,100 +734,50 @@ export default function Workspace() {
             </div>
 
             {createError && (
-              <div
-                style={{
-                  background: "#fef2f2",
-                  color: "#dc2626",
-                  padding: "10px 14px",
-                  borderRadius: "6px",
-                  fontSize: "13px",
-                  marginBottom: "14px",
-                }}
-              >
-                {createError}
+              <div className="error-box page-error">
+                <AlertCircle size={16} />
+                <span>{createError}</span>
               </div>
             )}
 
             <form onSubmit={handleCreateProject}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                  Project Name *
-                </label>
+              <div className="field">
+                <label>Project Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g., Patient Portal Modernization"
+                  placeholder="e.g., Patient Triage Modernization"
                   value={newProject.name}
                   onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                  Description
-                </label>
+              <div className="field">
+                <label>Description</label>
                 <textarea
                   rows={3}
                   placeholder="Brief summary of project objectives and deliverables..."
                   value={newProject.description}
                   onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                    resize: "vertical",
-                  }}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                    Category
-                  </label>
+              <div className="form-two">
+                <div className="field">
+                  <label>Category</label>
                   <input
                     type="text"
                     placeholder="e.g., Operations, Clinical"
                     value={newProject.category}
                     onChange={(e) => setNewProject({ ...newProject, category: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                    }}
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                    Priority
-                  </label>
+                <div className="field">
+                  <label>Priority</label>
                   <select
                     value={newProject.priority}
                     onChange={(e) => setNewProject({ ...newProject, priority: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      background: "#fff",
-                    }}
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -1095,36 +787,26 @@ export default function Workspace() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                  Target Deadline
-                </label>
+              <div className="field" style={{ marginBottom: "22px" }}>
+                <label>Target Deadline</label>
                 <input
                   type="date"
                   value={newProject.deadline}
                   onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="button secondary"
                   onClick={() => setShowCreateModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="primary-button"
+                  className="button primary"
                   disabled={creating}
                 >
                   {creating ? "Creating..." : "Create Project"}

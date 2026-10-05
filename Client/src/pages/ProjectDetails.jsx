@@ -45,10 +45,10 @@ import useProjectRealtime from "../hooks/useProjectRealtime";
 import { useAuth } from "../context/AuthContext";
 
 const COLUMNS = [
-  { id: "TODO", title: "To Do", color: "#6b7280", bg: "#f3f4f6" },
-  { id: "IN_PROGRESS", title: "In Progress", color: "#3b82f6", bg: "#eff6ff" },
-  { id: "IN_REVIEW", title: "In Review", color: "#f59e0b", bg: "#fffbeb" },
-  { id: "DONE", title: "Completed", color: "#10b981", bg: "#ecfdf5" },
+  { id: "TODO", title: "To Do", color: "var(--text-muted)", bg: "var(--cream-light)", border: "var(--border-subtle)" },
+  { id: "IN_PROGRESS", title: "In Progress", color: "var(--primary-green)", bg: "var(--pistachio-light)", border: "var(--border-green)" },
+  { id: "IN_REVIEW", title: "In Review", color: "var(--warning)", bg: "var(--warning-bg)", border: "var(--peach-border)" },
+  { id: "DONE", title: "Completed", color: "var(--success)", bg: "var(--success-bg)", border: "var(--success-border)" },
 ];
 
 export default function ProjectDetails() {
@@ -160,7 +160,6 @@ export default function ProjectDetails() {
           // If active task is open in modal, update it if version is higher
           setActiveTask((prev) => {
             if (prev && prev._id === payload._id) {
-              // If user was actively editing, detect concurrency
               if (taskEditForm && taskEditForm.version < payload.version) {
                 setConcurrencyConflict(
                   "Notice: This task was just updated by another collaborator in real-time. The latest updates are shown below."
@@ -250,7 +249,6 @@ export default function ProjectDetails() {
   // Handle Quick Status Move (Kanban buttons)
   const handleQuickStatusChange = async (task, newStatus) => {
     try {
-      // Optimistic Concurrency check
       const res = await updateTaskStatus(task._id, newStatus, task.version);
       if (res.data) {
         setTasks((prev) =>
@@ -285,7 +283,7 @@ export default function ProjectDetails() {
         assignedTo: taskEditForm.assignedTo?._id || taskEditForm.assignedTo || null,
         deadline: taskEditForm.deadline,
         progress: taskEditForm.progress,
-        expectedVersion: taskEditForm.version, // Safe simultaneous update check
+        expectedVersion: taskEditForm.version,
       });
 
       if (res.data) {
@@ -316,14 +314,12 @@ export default function ProjectDetails() {
     }
   };
 
-  // Open Task Modal
   const openTaskDrawer = (task) => {
     setActiveTask(task);
     setTaskEditForm({ ...task });
     setConcurrencyConflict("");
   };
 
-  // Create Task Handler
   const handleCreateTask = async (e) => {
     e.preventDefault();
     if (!newTask.title.trim()) return;
@@ -359,7 +355,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Add Comment Handler
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!commentText.trim() || !activeTask) return;
@@ -381,7 +376,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Add Attachment Handler
   const handleAddAttachment = async (e) => {
     e.preventDefault();
     if (!attachmentName.trim() || !attachmentUrl.trim() || !activeTask) return;
@@ -411,7 +405,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Handle Local File Selection
   const handleLocalFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -424,7 +417,6 @@ export default function ProjectDetails() {
     reader.readAsDataURL(file);
   };
 
-  // Delete Attachment Handler
   const handleDeleteAttachment = async (attachmentId) => {
     if (!activeTask) return;
     try {
@@ -440,7 +432,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Delete Task Handler
   const handleDeleteTask = async (taskId) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
@@ -452,7 +443,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Add Project Member Handler
   const handleAddMember = async (e) => {
     e.preventDefault();
     if (!selectedUserEmail.trim()) return;
@@ -475,7 +465,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // Tasks grouped by column status
   const tasksByColumn = useMemo(() => {
     const groups = { TODO: [], IN_PROGRESS: [], IN_REVIEW: [], DONE: [] };
     tasks.forEach((t) => {
@@ -490,8 +479,7 @@ export default function ProjectDetails() {
 
   if (loading) {
     return (
-      <div style={{ padding: "60px 20px", textAlign: "center", color: "#6b7280" }}>
-        <div className="spinner" style={{ margin: "0 auto 12px" }}></div>
+      <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)" }}>
         <p>Loading project workspace...</p>
       </div>
     );
@@ -500,27 +488,22 @@ export default function ProjectDetails() {
   if (error || !project) {
     return (
       <div style={{ padding: "30px", maxWidth: "800px", margin: "0 auto" }}>
-        <div
-          style={{
-            background: "#fef2f2",
-            color: "#dc2626",
-            padding: "20px",
-            borderRadius: "10px",
-            border: "1px solid #fee2e2",
-          }}
-        >
-          <h3>Unable to load project</h3>
-          <p>{error || "Project not found or you don't have access."}</p>
-          <Link to="/workspace" className="primary-button" style={{ marginTop: "12px", display: "inline-block" }}>
-            Return to Workspace
-          </Link>
+        <div className="error-box page-error">
+          <AlertTriangle size={20} />
+          <div>
+            <strong>Unable to load project</strong>
+            <p style={{ margin: "4px 0 0" }}>{error || "Project not found or you don't have access."}</p>
+          </div>
         </div>
+        <Link to="/workspace" className="button primary" style={{ marginTop: "12px", display: "inline-flex" }}>
+          Return to Workspace
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="project-board-view" style={{ padding: "20px 24px", maxWidth: "1600px", margin: "0 auto" }}>
+    <div className="project-board-view" style={{ maxWidth: "1600px", margin: "0 auto" }}>
       {/* Top Breadcrumb & Live indicator */}
       <div
         style={{
@@ -538,9 +521,9 @@ export default function ProjectDetails() {
             display: "inline-flex",
             alignItems: "center",
             gap: "6px",
-            color: "#059669",
-            fontWeight: "600",
-            fontSize: "14px",
+            color: "var(--primary-forest)",
+            fontWeight: "700",
+            fontSize: "13.5px",
             textDecoration: "none",
           }}
         >
@@ -550,107 +533,68 @@ export default function ProjectDetails() {
 
         {/* Real-time sync badge */}
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            background: livePulse ? "#d1fae5" : "#f3f4f6",
-            color: livePulse ? "#065f46" : "#4b5563",
-            padding: "4px 10px",
-            borderRadius: "999px",
-            fontSize: "12px",
-            fontWeight: "600",
-            transition: "all 0.3s ease",
-          }}
+          className={`live-pill ${livePulse ? "online" : ""}`}
         >
-          <div
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: livePulse ? "#10b981" : "#059669",
-              boxShadow: livePulse ? "0 0 8px #10b981" : "none",
-            }}
-          />
-          <span>{livePulse ? "Realtime Sync Active" : "Collaborative Board (Live)"}</span>
+          <Radio size={13} />
+          <span>{livePulse ? "Live Room Update" : "Collaborative Board (Active)"}</span>
         </div>
       </div>
 
       {/* Project Header Card */}
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "14px",
-          border: "1px solid #e5e7eb",
-          padding: "20px 24px",
-          marginBottom: "24px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-        }}
-      >
+      <div className="panel" style={{ padding: "24px", marginBottom: "24px" }}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
             flexWrap: "wrap",
-            gap: "16px",
+            gap: "18px",
           }}
         >
-          <div style={{ flex: "1 1 500px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 480px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
               <span
                 style={{
                   fontSize: "11px",
-                  fontWeight: "700",
+                  fontWeight: "750",
                   textTransform: "uppercase",
                   padding: "3px 8px",
                   borderRadius: "6px",
-                  background: "#f3f4f6",
-                  color: "#4b5563",
+                  background: "var(--pistachio-soft)",
+                  color: "var(--primary-forest)",
+                  border: "1px solid var(--border-green)",
                 }}
               >
                 {project.category || "General"}
               </span>
               <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "600",
-                  padding: "3px 8px",
-                  borderRadius: "6px",
-                  background:
-                    project.priority === "URGENT"
-                      ? "#fee2e2"
-                      : project.priority === "HIGH"
-                      ? "#fef3c7"
-                      : "#e0f2fe",
-                  color:
-                    project.priority === "URGENT"
-                      ? "#b91c1c"
-                      : project.priority === "HIGH"
-                      ? "#b45309"
-                      : "#0369a1",
-                }}
+                className={`badge ${
+                  project.priority === "URGENT"
+                    ? "badge-danger"
+                    : project.priority === "HIGH"
+                    ? "badge-warning"
+                    : "badge-info"
+                }`}
               >
                 {project.priority} Priority
               </span>
               <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "600",
-                  padding: "3px 8px",
-                  borderRadius: "6px",
-                  background: project.status === "COMPLETED" ? "#d1fae5" : "#dbeafe",
-                  color: project.status === "COMPLETED" ? "#065f46" : "#1e40af",
-                }}
+                className={`badge ${
+                  project.status === "COMPLETED"
+                    ? "badge-success"
+                    : project.status === "IN_PROGRESS"
+                    ? "badge-info"
+                    : "badge-secondary"
+                }`}
               >
                 {project.status}
               </span>
             </div>
 
-            <h1 style={{ fontSize: "24px", fontWeight: "700", margin: "0 0 6px", color: "#111827" }}>
+            <h1 style={{ fontSize: "24px", fontWeight: "800", margin: "0 0 8px", color: "var(--text-primary)" }}>
               {project.name}
             </h1>
-            <p style={{ color: "#6b7280", fontSize: "14px", margin: 0, lineHeight: 1.5 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: 0, lineHeight: 1.5 }}>
               {project.description || "Collaborative workspace for project execution and tracking."}
             </p>
           </div>
@@ -659,17 +603,15 @@ export default function ProjectDetails() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "12px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
               <button
-                className="primary-button"
+                className="button primary"
                 onClick={() => setShowTaskModal(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px" }}
               >
                 <Plus size={16} />
                 Add Task
               </button>
               <button
-                className="secondary-button"
+                className="button secondary"
                 onClick={() => setShowMemberModal(true)}
-                style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px" }}
               >
                 <Users size={16} />
                 Invite Member
@@ -678,7 +620,7 @@ export default function ProjectDetails() {
 
             {/* Members Avatars Row */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: "500" }}>Team:</span>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" }}>Team:</span>
               <div style={{ display: "flex" }}>
                 {(project.members || []).map((m, idx) => (
                   <div
@@ -688,14 +630,14 @@ export default function ProjectDetails() {
                       width: "28px",
                       height: "28px",
                       borderRadius: "50%",
-                      background: "#10b981",
-                      color: "#fff",
+                      background: "var(--primary-forest)",
+                      color: "#ffffff",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: "11px",
-                      fontWeight: "700",
-                      border: "2px solid #fff",
+                      fontWeight: "750",
+                      border: "2px solid var(--warm-cream)",
                       marginLeft: idx > 0 ? "-6px" : "0",
                     }}
                   >
@@ -711,8 +653,8 @@ export default function ProjectDetails() {
         <div
           style={{
             marginTop: "20px",
-            paddingTop: "16px",
-            borderTop: "1px solid #f3f4f6",
+            paddingTop: "18px",
+            borderTop: "1px solid var(--border-subtle)",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "16px",
@@ -725,8 +667,8 @@ export default function ProjectDetails() {
                 display: "flex",
                 justifyContent: "space-between",
                 fontSize: "12px",
-                fontWeight: "600",
-                color: "#4b5563",
+                fontWeight: "650",
+                color: "var(--primary-forest)",
                 marginBottom: "6px",
               }}
             >
@@ -736,10 +678,11 @@ export default function ProjectDetails() {
             <div
               style={{
                 width: "100%",
-                height: "8px",
-                background: "#e5e7eb",
-                borderRadius: "999px",
+                height: "7px",
+                background: "var(--pistachio-light)",
+                borderRadius: "var(--radius-pill)",
                 overflow: "hidden",
+                border: "1px solid var(--border-green)",
               }}
             >
               <div
@@ -748,17 +691,17 @@ export default function ProjectDetails() {
                   height: "100%",
                   background:
                     project.progress === 100
-                      ? "#10b981"
-                      : "linear-gradient(90deg, #10b981 0%, #3b82f6 100%)",
-                  borderRadius: "999px",
+                      ? "var(--success)"
+                      : "linear-gradient(90deg, var(--primary-green) 0%, var(--primary-forest) 100%)",
+                  borderRadius: "var(--radius-pill)",
                   transition: "width 0.4s ease",
                 }}
               />
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4b5563", fontSize: "13px" }}>
-            <Calendar size={16} style={{ color: "#059669" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "13px" }}>
+            <Calendar size={15} style={{ color: "var(--primary-forest)" }} />
             <span>
               Target Deadline:{" "}
               <strong>
@@ -767,8 +710,8 @@ export default function ProjectDetails() {
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4b5563", fontSize: "13px" }}>
-            <CheckSquare size={16} style={{ color: "#3b82f6" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "13px" }}>
+            <CheckSquare size={15} style={{ color: "var(--primary-green)" }} />
             <span>
               Task Summary:{" "}
               <strong>
@@ -781,40 +724,16 @@ export default function ProjectDetails() {
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "4px" }}>
             <button
               onClick={() => setViewMode("board")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                background: viewMode === "board" ? "#10b981" : "#fff",
-                color: viewMode === "board" ? "#fff" : "#4b5563",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
-                fontSize: "12px",
-                fontWeight: "600",
-              }}
+              className={`button ${viewMode === "board" ? "primary small" : "secondary small"}`}
             >
-              <LayoutGrid size={14} />
+              <LayoutGrid size={13} />
               Board
             </button>
             <button
               onClick={() => setViewMode("list")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: "6px",
-                border: "1px solid #d1d5db",
-                background: viewMode === "list" ? "#10b981" : "#fff",
-                color: viewMode === "list" ? "#fff" : "#4b5563",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "4px",
-                fontSize: "12px",
-                fontWeight: "600",
-              }}
+              className={`button ${viewMode === "list" ? "primary small" : "secondary small"}`}
             >
-              <ListIcon size={14} />
+              <ListIcon size={13} />
               List
             </button>
           </div>
@@ -838,9 +757,10 @@ export default function ProjectDetails() {
               <div
                 key={col.id}
                 style={{
-                  background: "#f9fafb",
-                  borderRadius: "12px",
-                  border: "1px solid #e5e7eb",
+                  background: "var(--warm-cream)",
+                  borderRadius: "var(--radius-card)",
+                  border: "1px solid var(--border-subtle)",
+                  boxShadow: "var(--shadow-xs)",
                   padding: "16px",
                   minHeight: "450px",
                   display: "flex",
@@ -855,7 +775,7 @@ export default function ProjectDetails() {
                     alignItems: "center",
                     marginBottom: "14px",
                     paddingBottom: "8px",
-                    borderBottom: "2px solid #e5e7eb",
+                    borderBottom: "2px solid var(--border-subtle)",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -867,18 +787,18 @@ export default function ProjectDetails() {
                         background: col.color,
                       }}
                     />
-                    <h3 style={{ fontSize: "15px", fontWeight: "700", margin: 0, color: "#111827" }}>
+                    <h3 style={{ fontSize: "15px", fontWeight: "750", margin: 0, color: "var(--text-primary)" }}>
                       {col.title}
                     </h3>
                   </div>
                   <span
                     style={{
-                      background: "#e5e7eb",
-                      color: "#374151",
+                      background: "var(--pistachio-soft)",
+                      color: "var(--primary-forest)",
                       padding: "2px 8px",
-                      borderRadius: "999px",
+                      borderRadius: "var(--radius-pill)",
                       fontSize: "12px",
-                      fontWeight: "700",
+                      fontWeight: "750",
                     }}
                   >
                     {colTasks.length}
@@ -886,19 +806,19 @@ export default function ProjectDetails() {
                 </div>
 
                 {/* Task Cards in Column */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", flexGrow: 1 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexGrow: 1 }}>
                   {colTasks.map((task) => (
                     <div
                       key={task._id}
                       onClick={() => openTaskDrawer(task)}
                       style={{
-                        background: "#fff",
-                        borderRadius: "10px",
-                        border: "1px solid #e5e7eb",
+                        background: "var(--cream-light)",
+                        borderRadius: "var(--radius-md)",
+                        border: "1px solid var(--border-subtle)",
                         padding: "14px",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                        boxShadow: "var(--shadow-xs)",
                         cursor: "pointer",
-                        transition: "all 0.15s ease",
+                        transition: "all var(--transition-fast)",
                       }}
                       className="kanban-card"
                     >
@@ -912,25 +832,13 @@ export default function ProjectDetails() {
                         }}
                       >
                         <span
-                          style={{
-                            fontSize: "10px",
-                            fontWeight: "700",
-                            textTransform: "uppercase",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            background:
-                              task.priority === "URGENT"
-                                ? "#fee2e2"
-                                : task.priority === "HIGH"
-                                ? "#fef3c7"
-                                : "#e0f2fe",
-                            color:
-                              task.priority === "URGENT"
-                                ? "#b91c1c"
-                                : task.priority === "HIGH"
-                                ? "#b45309"
-                                : "#0369a1",
-                          }}
+                          className={`badge ${
+                            task.priority === "URGENT"
+                              ? "badge-danger"
+                              : task.priority === "HIGH"
+                              ? "badge-warning"
+                              : "badge-info"
+                          }`}
                         >
                           {task.priority}
                         </span>
@@ -957,7 +865,7 @@ export default function ProjectDetails() {
                                 border: "none",
                                 cursor: "pointer",
                                 padding: "2px",
-                                color: "#9ca3af",
+                                color: "var(--text-subtle)",
                               }}
                             >
                               <ChevronLeft size={16} />
@@ -980,7 +888,7 @@ export default function ProjectDetails() {
                                 border: "none",
                                 cursor: "pointer",
                                 padding: "2px",
-                                color: "#059669",
+                                color: "var(--primary-green)",
                               }}
                             >
                               <ChevronRight size={16} />
@@ -993,8 +901,8 @@ export default function ProjectDetails() {
                       <h4
                         style={{
                           fontSize: "14px",
-                          fontWeight: "600",
-                          color: "#111827",
+                          fontWeight: "700",
+                          color: "var(--text-primary)",
                           margin: "0 0 6px",
                           lineHeight: 1.4,
                         }}
@@ -1005,7 +913,7 @@ export default function ProjectDetails() {
                         <p
                           style={{
                             fontSize: "12px",
-                            color: "#6b7280",
+                            color: "var(--text-muted)",
                             margin: "0 0 10px",
                             display: "-webkit-box",
                             WebkitLineClamp: 2,
@@ -1024,7 +932,7 @@ export default function ProjectDetails() {
                             style={{
                               width: "100%",
                               height: "4px",
-                              background: "#e5e7eb",
+                              background: "var(--border-subtle)",
                               borderRadius: "2px",
                               overflow: "hidden",
                             }}
@@ -1033,7 +941,7 @@ export default function ProjectDetails() {
                               style={{
                                 width: `${task.progress}%`,
                                 height: "100%",
-                                background: "#3b82f6",
+                                background: "var(--primary-green)",
                               }}
                             />
                           </div>
@@ -1047,9 +955,9 @@ export default function ProjectDetails() {
                           justifyContent: "space-between",
                           alignItems: "center",
                           fontSize: "11px",
-                          color: "#6b7280",
+                          color: "var(--text-muted)",
                           paddingTop: "8px",
-                          borderTop: "1px solid #f3f4f6",
+                          borderTop: "1px solid var(--border-subtle)",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1060,19 +968,19 @@ export default function ProjectDetails() {
                                 width: "22px",
                                 height: "22px",
                                 borderRadius: "50%",
-                                background: "#3b82f6",
-                                color: "#fff",
+                                background: "var(--primary-forest)",
+                                color: "#ffffff",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
                                 fontSize: "10px",
-                                fontWeight: "700",
+                                fontWeight: "750",
                               }}
                             >
                               {task.assignedTo.name.charAt(0).toUpperCase()}
                             </div>
                           ) : (
-                            <span style={{ color: "#9ca3af" }}>Unassigned</span>
+                            <span style={{ color: "var(--text-subtle)" }}>Unassigned</span>
                           )}
                         </div>
 
@@ -1107,11 +1015,11 @@ export default function ProjectDetails() {
                   {colTasks.length === 0 && (
                     <div
                       style={{
-                        border: "1px dashed #d1d5db",
-                        borderRadius: "8px",
+                        border: "1px dashed var(--border-subtle)",
+                        borderRadius: "var(--radius-md)",
                         padding: "24px 12px",
                         textAlign: "center",
-                        color: "#9ca3af",
+                        color: "var(--text-subtle)",
                         fontSize: "12px",
                       }}
                     >
@@ -1125,90 +1033,65 @@ export default function ProjectDetails() {
         </div>
       ) : (
         /* List / Table View */
-        <div style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e5e7eb", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb", color: "#4b5563" }}>
-                <th style={{ padding: "12px 16px" }}>Task Title</th>
-                <th style={{ padding: "12px 16px" }}>Status</th>
-                <th style={{ padding: "12px 16px" }}>Priority</th>
-                <th style={{ padding: "12px 16px" }}>Assignee</th>
-                <th style={{ padding: "12px 16px" }}>Deadline</th>
-                <th style={{ padding: "12px 16px" }}>Progress</th>
-                <th style={{ padding: "12px 16px" }}>Actions</th>
+              <tr>
+                <th>Task Title</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Assignee</th>
+                <th>Deadline</th>
+                <th>Progress</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {tasks.map((task) => (
                 <tr
                   key={task._id}
-                  style={{ borderBottom: "1px solid #f3f4f6", cursor: "pointer" }}
+                  style={{ cursor: "pointer" }}
                   onClick={() => openTaskDrawer(task)}
                 >
-                  <td style={{ padding: "14px 16px", fontWeight: "600", color: "#111827" }}>{task.title}</td>
-                  <td style={{ padding: "14px 16px" }}>
+                  <td style={{ fontWeight: "700", color: "var(--text-primary)" }}>{task.title}</td>
+                  <td>
                     <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        padding: "3px 8px",
-                        borderRadius: "6px",
-                        background:
-                          task.status === "DONE"
-                            ? "#d1fae5"
-                            : task.status === "IN_PROGRESS"
-                            ? "#dbeafe"
-                            : task.status === "IN_REVIEW"
-                            ? "#fef3c7"
-                            : "#f3f4f6",
-                        color:
-                          task.status === "DONE"
-                            ? "#065f46"
-                            : task.status === "IN_PROGRESS"
-                            ? "#1e40af"
-                            : task.status === "IN_REVIEW"
-                            ? "#b45309"
-                            : "#374151",
-                      }}
+                      className={`badge ${
+                        task.status === "DONE"
+                          ? "badge-success"
+                          : task.status === "IN_PROGRESS"
+                          ? "badge-info"
+                          : task.status === "IN_REVIEW"
+                          ? "badge-warning"
+                          : "badge-secondary"
+                      }`}
                     >
                       {task.status}
                     </span>
                   </td>
-                  <td style={{ padding: "14px 16px" }}>
+                  <td>
                     <span
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        padding: "3px 8px",
-                        borderRadius: "6px",
-                        background:
-                          task.priority === "URGENT"
-                            ? "#fee2e2"
-                            : task.priority === "HIGH"
-                            ? "#fef3c7"
-                            : "#e0f2fe",
-                        color:
-                          task.priority === "URGENT"
-                            ? "#b91c1c"
-                            : task.priority === "HIGH"
-                            ? "#b45309"
-                            : "#0369a1",
-                      }}
+                      className={`badge ${
+                        task.priority === "URGENT"
+                          ? "badge-danger"
+                          : task.priority === "HIGH"
+                          ? "badge-warning"
+                          : "badge-info"
+                      }`}
                     >
                       {task.priority}
                     </span>
                   </td>
-                  <td style={{ padding: "14px 16px", color: "#4b5563" }}>
+                  <td style={{ color: "var(--text-muted)" }}>
                     {task.assignedTo?.name || "Unassigned"}
                   </td>
-                  <td style={{ padding: "14px 16px", color: "#4b5563" }}>
+                  <td style={{ color: "var(--text-muted)" }}>
                     {task.deadline ? new Date(task.deadline).toLocaleDateString() : "-"}
                   </td>
-                  <td style={{ padding: "14px 16px" }}>{task.progress || 0}%</td>
-                  <td style={{ padding: "14px 16px" }}>
+                  <td>{task.progress || 0}%</td>
+                  <td>
                     <button
-                      className="secondary-button"
-                      style={{ padding: "4px 10px", fontSize: "12px" }}
+                      className="button secondary small"
                       onClick={(e) => {
                         e.stopPropagation();
                         openTaskDrawer(task);
@@ -1233,7 +1116,8 @@ export default function ProjectDetails() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(23, 35, 31, 0.45)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             justifyContent: "flex-end",
             zIndex: 1000,
@@ -1242,14 +1126,15 @@ export default function ProjectDetails() {
         >
           <div
             style={{
-              background: "#fff",
+              background: "var(--warm-cream)",
               width: "100%",
               maxWidth: "680px",
               height: "100%",
-              boxShadow: "-10px 0 25px rgba(0,0,0,0.1)",
+              boxShadow: "var(--shadow-modal)",
               display: "flex",
               flexDirection: "column",
               overflowY: "auto",
+              borderLeft: "1px solid var(--border-subtle)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1257,37 +1142,28 @@ export default function ProjectDetails() {
             <div
               style={{
                 padding: "20px 24px",
-                borderBottom: "1px solid #e5e7eb",
+                borderBottom: "1px solid var(--border-subtle)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 position: "sticky",
                 top: 0,
-                background: "#fff",
+                background: "var(--warm-cream)",
                 zIndex: 10,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "700",
-                    padding: "3px 8px",
-                    borderRadius: "4px",
-                    background: "#f3f4f6",
-                    color: "#4b5563",
-                  }}
-                >
+                <span className="badge badge-secondary">
                   Version {taskEditForm.version || 1}
                 </span>
-                <h3 style={{ fontSize: "18px", fontWeight: "700", margin: 0, color: "#111827" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "750", margin: 0, color: "var(--text-primary)" }}>
                   Task Details & Collaboration
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveTask(null)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 <X size={20} />
               </button>
@@ -1295,25 +1171,11 @@ export default function ProjectDetails() {
 
             {/* Concurrency Conflict Banner */}
             {concurrencyConflict && (
-              <div
-                style={{
-                  margin: "16px 24px 0",
-                  padding: "12px 16px",
-                  background: "#fffbeb",
-                  border: "1px solid #fde68a",
-                  borderRadius: "8px",
-                  color: "#92400e",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  fontSize: "13px",
-                  lineHeight: 1.4,
-                }}
-              >
-                <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: "2px" }} />
+              <div className="error-box page-error" style={{ margin: "16px 24px 0" }}>
+                <AlertTriangle size={18} style={{ flexShrink: 0 }} />
                 <div>
                   <strong>Safe Concurrency Alert</strong>
-                  <p style={{ margin: "4px 0 0" }}>{concurrencyConflict}</p>
+                  <p style={{ margin: "2px 0 0" }}>{concurrencyConflict}</p>
                 </div>
               </div>
             )}
@@ -1322,64 +1184,32 @@ export default function ProjectDetails() {
             <div style={{ padding: "24px", flexGrow: 1 }}>
               {/* Task Edit Form */}
               <form onSubmit={handleSaveTaskEdit} style={{ marginBottom: "28px" }}>
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                    Task Title *
-                  </label>
+                <div className="field">
+                  <label>Task Title *</label>
                   <input
                     type="text"
                     required
                     value={taskEditForm.title}
                     onChange={(e) => setTaskEditForm({ ...taskEditForm, title: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                    }}
                   />
                 </div>
 
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                    Description
-                  </label>
+                <div className="field">
+                  <label>Description</label>
                   <textarea
                     rows={3}
                     value={taskEditForm.description}
                     onChange={(e) => setTaskEditForm({ ...taskEditForm, description: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      resize: "vertical",
-                    }}
                   />
                 </div>
 
                 {/* Status, Priority, Assignee Grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                      Status
-                    </label>
+                <div className="form-two">
+                  <div className="field">
+                    <label>Status</label>
                     <select
                       value={taskEditForm.status}
                       onChange={(e) => setTaskEditForm({ ...taskEditForm, status: e.target.value })}
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                        background: "#fff",
-                      }}
                     >
                       <option value="TODO">To Do</option>
                       <option value="IN_PROGRESS">In Progress</option>
@@ -1388,22 +1218,11 @@ export default function ProjectDetails() {
                     </select>
                   </div>
 
-                  <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                      Priority
-                    </label>
+                  <div className="field">
+                    <label>Priority</label>
                     <select
                       value={taskEditForm.priority}
                       onChange={(e) => setTaskEditForm({ ...taskEditForm, priority: e.target.value })}
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                        background: "#fff",
-                      }}
                     >
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
@@ -1413,23 +1232,12 @@ export default function ProjectDetails() {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                      Assignee
-                    </label>
+                <div className="form-two">
+                  <div className="field">
+                    <label>Assignee</label>
                     <select
                       value={taskEditForm.assignedTo?._id || taskEditForm.assignedTo || ""}
                       onChange={(e) => setTaskEditForm({ ...taskEditForm, assignedTo: e.target.value })}
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                        background: "#fff",
-                      }}
                     >
                       <option value="">Unassigned</option>
                       {(project.members || []).map((m) => (
@@ -1449,29 +1257,19 @@ export default function ProjectDetails() {
                     </select>
                   </div>
 
-                  <div>
-                    <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px", color: "#374151" }}>
-                      Deadline
-                    </label>
+                  <div className="field">
+                    <label>Deadline</label>
                     <input
                       type="date"
                       value={taskEditForm.deadline ? taskEditForm.deadline.substring(0, 10) : ""}
                       onChange={(e) => setTaskEditForm({ ...taskEditForm, deadline: e.target.value })}
-                      style={{
-                        width: "100%",
-                        padding: "9px 12px",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        fontSize: "14px",
-                        boxSizing: "border-box",
-                      }}
                     />
                   </div>
                 </div>
 
                 {/* Progress Slider */}
                 <div style={{ marginBottom: "18px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: "650", marginBottom: "6px" }}>
                     <span>Task Progress</span>
                     <span>{taskEditForm.progress || 0}%</span>
                   </div>
@@ -1482,35 +1280,24 @@ export default function ProjectDetails() {
                     step="5"
                     value={taskEditForm.progress || 0}
                     onChange={(e) => setTaskEditForm({ ...taskEditForm, progress: Number(e.target.value) })}
-                    style={{ width: "100%", accentColor: "#10b981", cursor: "pointer" }}
+                    style={{ width: "100%", accentColor: "var(--primary-green)", cursor: "pointer" }}
                   />
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <button
                     type="button"
+                    className="button danger"
                     onClick={() => handleDeleteTask(taskEditForm._id)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#dc2626",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      cursor: "pointer",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                     Delete Task
                   </button>
 
                   <button
                     type="submit"
-                    className="primary-button"
+                    className="button primary"
                     disabled={savingTask}
-                    style={{ padding: "8px 20px" }}
                   >
                     {savingTask ? "Saving..." : "Save Changes"}
                   </button>
@@ -1522,7 +1309,7 @@ export default function ProjectDetails() {
                 style={{
                   marginBottom: "28px",
                   paddingTop: "20px",
-                  borderTop: "1px solid #e5e7eb",
+                  borderTop: "1px solid var(--border-subtle)",
                 }}
               >
                 <div
@@ -1533,22 +1320,21 @@ export default function ProjectDetails() {
                     marginBottom: "12px",
                   }}
                 >
-                  <h4 style={{ fontSize: "15px", fontWeight: "700", margin: 0, color: "#111827", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <h4 style={{ fontSize: "15px", fontWeight: "750", margin: 0, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: "6px" }}>
                     <Paperclip size={16} />
                     Files & Attachments ({(activeTask.attachments || []).length})
                   </h4>
                   <button
                     type="button"
-                    className="secondary-button"
+                    className="button secondary small"
                     onClick={() => setShowAttachModal(true)}
-                    style={{ padding: "4px 10px", fontSize: "12px" }}
                   >
                     + Add File
                   </button>
                 </div>
 
                 {(activeTask.attachments || []).length === 0 ? (
-                  <p style={{ fontSize: "13px", color: "#9ca3af", fontStyle: "italic", margin: 0 }}>
+                  <p style={{ fontSize: "13px", color: "var(--text-subtle)", fontStyle: "italic", margin: 0 }}>
                     No files or links attached yet.
                   </p>
                 ) : (
@@ -1560,25 +1346,25 @@ export default function ProjectDetails() {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          padding: "8px 12px",
-                          borderRadius: "6px",
-                          border: "1px solid #e5e7eb",
-                          background: "#f9fafb",
+                          padding: "10px 14px",
+                          borderRadius: "var(--radius-md)",
+                          border: "1px solid var(--border-subtle)",
+                          background: "var(--cream-light)",
                           fontSize: "13px",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <FileText size={16} style={{ color: "#3b82f6" }} />
+                          <FileText size={16} style={{ color: "var(--primary-forest)" }} />
                           <a
                             href={att.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             download={att.name}
-                            style={{ fontWeight: "600", color: "#1e40af", textDecoration: "underline" }}
+                            style={{ fontWeight: "700", color: "var(--primary-forest)", textDecoration: "underline" }}
                           >
                             {att.name}
                           </a>
-                          <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                          <span style={{ fontSize: "11px", color: "var(--text-subtle)" }}>
                             by {att.uploadedBy?.name || "User"}
                           </span>
                         </div>
@@ -1589,7 +1375,7 @@ export default function ProjectDetails() {
                             background: "none",
                             border: "none",
                             cursor: "pointer",
-                            color: "#9ca3af",
+                            color: "var(--text-subtle)",
                           }}
                         >
                           <Trash2 size={14} />
@@ -1604,15 +1390,15 @@ export default function ProjectDetails() {
               <div
                 style={{
                   paddingTop: "20px",
-                  borderTop: "1px solid #e5e7eb",
+                  borderTop: "1px solid var(--border-subtle)",
                 }}
               >
                 <h4
                   style={{
                     fontSize: "15px",
-                    fontWeight: "700",
+                    fontWeight: "750",
                     margin: "0 0 14px",
-                    color: "#111827",
+                    color: "var(--text-primary)",
                     display: "flex",
                     alignItems: "center",
                     gap: "6px",
@@ -1623,15 +1409,15 @@ export default function ProjectDetails() {
                 </h4>
 
                 {/* Comments List */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
                   {(activeTask.comments || []).map((c, idx) => (
                     <div
                       key={c._id || idx}
                       style={{
                         padding: "10px 14px",
-                        borderRadius: "8px",
-                        background: "#f9fafb",
-                        border: "1px solid #f3f4f6",
+                        borderRadius: "var(--radius-md)",
+                        background: "var(--cream-light)",
+                        border: "1px solid var(--border-subtle)",
                       }}
                     >
                       <div
@@ -1643,19 +1429,19 @@ export default function ProjectDetails() {
                           fontSize: "12px",
                         }}
                       >
-                        <strong style={{ color: "#111827" }}>{c.user?.name || "Team Member"}</strong>
-                        <span style={{ color: "#9ca3af" }}>
+                        <strong style={{ color: "var(--text-primary)" }}>{c.user?.name || "Team Member"}</strong>
+                        <span style={{ color: "var(--text-subtle)" }}>
                           {new Date(c.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: "13px", color: "#374151", lineHeight: 1.4 }}>
+                      <p style={{ margin: 0, fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.4 }}>
                         {c.text}
                       </p>
                     </div>
                   ))}
 
                   {(activeTask.comments || []).length === 0 && (
-                    <p style={{ fontSize: "13px", color: "#9ca3af", fontStyle: "italic", margin: 0 }}>
+                    <p style={{ fontSize: "13px", color: "var(--text-subtle)", fontStyle: "italic", margin: 0 }}>
                       No comments yet. Start the conversation!
                     </p>
                   )}
@@ -1670,17 +1456,14 @@ export default function ProjectDetails() {
                     onChange={(e) => setCommentText(e.target.value)}
                     style={{
                       flexGrow: 1,
-                      padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
                       fontSize: "13px",
                     }}
                   />
                   <button
                     type="submit"
-                    className="primary-button"
+                    className="button primary"
                     disabled={submittingComment || !commentText.trim()}
-                    style={{ padding: "8px 14px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+                    style={{ padding: "8px 16px" }}
                   >
                     <Send size={14} />
                     Post
@@ -1701,7 +1484,8 @@ export default function ProjectDetails() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(23, 35, 31, 0.45)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1710,13 +1494,12 @@ export default function ProjectDetails() {
           }}
         >
           <div
+            className="panel"
             style={{
-              background: "#fff",
-              borderRadius: "14px",
               maxWidth: "500px",
               width: "100%",
-              padding: "24px",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              padding: "26px",
+              boxShadow: "var(--shadow-modal)",
             }}
           >
             <div
@@ -1724,80 +1507,49 @@ export default function ProjectDetails() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "16px",
+                marginBottom: "18px",
               }}
             >
-              <h2 style={{ fontSize: "18px", fontWeight: "700", margin: 0, color: "#111827" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "750", margin: 0, color: "var(--text-primary)" }}>
                 Add New Task
               </h2>
               <button
                 type="button"
                 onClick={() => setShowTaskModal(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 <X size={20} />
               </button>
             </div>
 
             <form onSubmit={handleCreateTask}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  Task Title *
-                </label>
+              <div className="field">
+                <label>Task Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., Configure triage workflow"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  Description
-                </label>
+              <div className="field">
+                <label>Description</label>
                 <textarea
                   rows={3}
                   placeholder="Key instructions or checklist..."
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  style={{
-                    width: "100%",
-                    padding: "9px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "14px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                    Status
-                  </label>
+              <div className="form-two">
+                <div className="field">
+                  <label>Status</label>
                   <select
                     value={newTask.status}
                     onChange={(e) => setNewTask({ ...newTask, status: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      background: "#fff",
-                    }}
                   >
                     <option value="TODO">To Do</option>
                     <option value="IN_PROGRESS">In Progress</option>
@@ -1806,22 +1558,11 @@ export default function ProjectDetails() {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                    Priority
-                  </label>
+                <div className="field">
+                  <label>Priority</label>
                   <select
                     value={newTask.priority}
                     onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      background: "#fff",
-                    }}
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -1831,23 +1572,12 @@ export default function ProjectDetails() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                    Assign To
-                  </label>
+              <div className="form-two" style={{ marginBottom: "22px" }}>
+                <div className="field">
+                  <label>Assign To</label>
                   <select
                     value={newTask.assignedTo}
                     onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      background: "#fff",
-                    }}
                   >
                     <option value="">Unassigned</option>
                     {(project.members || []).map((m) => (
@@ -1858,22 +1588,12 @@ export default function ProjectDetails() {
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                    Deadline
-                  </label>
+                <div className="field">
+                  <label>Deadline</label>
                   <input
                     type="date"
                     value={newTask.deadline}
                     onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
-                    style={{
-                      width: "100%",
-                      padding: "9px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #d1d5db",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                    }}
                   />
                 </div>
               </div>
@@ -1881,14 +1601,14 @@ export default function ProjectDetails() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="button secondary"
                   onClick={() => setShowTaskModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="primary-button"
+                  className="button primary"
                   disabled={taskSubmitting}
                 >
                   {taskSubmitting ? "Creating..." : "Create Task"}
@@ -1908,7 +1628,8 @@ export default function ProjectDetails() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(23, 35, 31, 0.45)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -1917,83 +1638,63 @@ export default function ProjectDetails() {
           }}
         >
           <div
+            className="panel"
             style={{
-              background: "#fff",
-              borderRadius: "14px",
               maxWidth: "460px",
               width: "100%",
               padding: "24px",
+              boxShadow: "var(--shadow-modal)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "17px", fontWeight: "700", margin: 0 }}>Attach File or Link</h3>
+              <h3 style={{ fontSize: "17px", fontWeight: "750", margin: 0 }}>Attach File or Link</h3>
               <button
                 type="button"
                 onClick={() => setShowAttachModal(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleAddAttachment}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  File / Document Name *
-                </label>
+              <div className="field">
+                <label>File / Document Name *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g., protocol_spec.pdf"
                   value={attachmentName}
                   onChange={(e) => setAttachmentName(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  Upload File or Paste URL *
-                </label>
+              <div className="field" style={{ marginBottom: "20px" }}>
+                <label>Upload File or Paste URL *</label>
                 <input
                   type="file"
                   onChange={handleLocalFileSelect}
-                  style={{ display: "block", marginBottom: "8px", fontSize: "13px" }}
+                  style={{ marginBottom: "8px" }}
                 />
                 <input
                   type="text"
                   placeholder="Or paste external link: https://..."
                   value={attachmentUrl}
                   onChange={(e) => setAttachmentUrl(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="button secondary"
                   onClick={() => setShowAttachModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="primary-button"
+                  className="button primary"
                   disabled={uploadingAttachment || !attachmentName || !attachmentUrl}
                 >
                   {uploadingAttachment ? "Attaching..." : "Attach File"}
@@ -2013,7 +1714,8 @@ export default function ProjectDetails() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(23, 35, 31, 0.45)",
+            backdropFilter: "blur(4px)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -2022,43 +1724,32 @@ export default function ProjectDetails() {
           }}
         >
           <div
+            className="panel"
             style={{
-              background: "#fff",
-              borderRadius: "14px",
               maxWidth: "460px",
               width: "100%",
               padding: "24px",
+              boxShadow: "var(--shadow-modal)",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "17px", fontWeight: "700", margin: 0 }}>Invite Team Member</h3>
+              <h3 style={{ fontSize: "17px", fontWeight: "750", margin: 0 }}>Invite Team Member</h3>
               <button
                 type="button"
                 onClick={() => setShowMemberModal(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280" }}
+                style={{ color: "var(--text-muted)" }}
               >
                 <X size={18} />
               </button>
             </div>
 
             <form onSubmit={handleAddMember}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  Select Collaborator or Enter Email *
-                </label>
+              <div className="field">
+                <label>Select Collaborator or Enter Email *</label>
                 <select
                   value={selectedUserEmail}
                   onChange={(e) => setSelectedUserEmail(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                    background: "#fff",
-                    marginBottom: "8px",
-                  }}
+                  style={{ marginBottom: "8px" }}
                 >
                   <option value="">-- Choose from available users --</option>
                   {collaborators
@@ -2074,33 +1765,14 @@ export default function ProjectDetails() {
                   placeholder="Or type user email directly..."
                   value={selectedUserEmail}
                   onChange={(e) => setSelectedUserEmail(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                  }}
                 />
               </div>
 
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", marginBottom: "6px" }}>
-                  Project Role
-                </label>
+              <div className="field" style={{ marginBottom: "22px" }}>
+                <label>Project Role</label>
                 <select
                   value={memberRole}
                   onChange={(e) => setMemberRole(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "8px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #d1d5db",
-                    fontSize: "13px",
-                    boxSizing: "border-box",
-                    background: "#fff",
-                  }}
                 >
                   <option value="MEMBER">Member (Full task & comment access)</option>
                   <option value="ADMIN">Admin (Manage tasks, members & settings)</option>
@@ -2111,14 +1783,14 @@ export default function ProjectDetails() {
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="button secondary"
                   onClick={() => setShowMemberModal(false)}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="primary-button"
+                  className="button primary"
                   disabled={addingMember || !selectedUserEmail.trim()}
                 >
                   {addingMember ? "Adding..." : "Add to Project"}
