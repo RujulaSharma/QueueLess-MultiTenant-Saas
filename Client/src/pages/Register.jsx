@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
@@ -23,7 +23,7 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><span className="brand-mark"><Sparkles size={17} /></span> QueueLess</Link>
+        <Link to="/" className="auth-brand"><span className="brand-mark"><HeartPulse size={19} /></span> <span><b>Queue</b>Less</span></Link>
         <h1>Create your account</h1>
         <p>Get your first QueueLess workspace running.</p>
         <form onSubmit={submit} className="form">

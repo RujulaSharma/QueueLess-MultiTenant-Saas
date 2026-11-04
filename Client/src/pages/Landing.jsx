@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  ArrowUp,
   CalendarCheck2,
   CheckCircle2,
   Clock3,
@@ -21,7 +22,7 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 
 const features = [
@@ -44,8 +45,43 @@ export default function Landing() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const dashboardPath = user?.role === "ADMIN" ? "/admin" : "/dashboard";
   const closeMobile = () => setMobileOpen(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 20);
+      setShowBackToTop(y > 350);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    const elements = document.querySelectorAll(".reveal-on-scroll");
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleLogout = () => {
     logout();
@@ -56,7 +92,7 @@ export default function Landing() {
   return (
     <div className="public-home">
       {/* Floating Header Navigation matching Reference Design */}
-      <header className="public-nav">
+      <header className={`public-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="public-nav-inner">
           <Link to="/" className="public-brand" onClick={closeMobile}>
             <span className="public-brand-mark"><HeartPulse size={20} /></span>
@@ -259,7 +295,7 @@ export default function Landing() {
         </section>
 
         {/* 4 Feature Cards Strip matching reference */}
-        <section className="public-service-strip" id="services">
+        <section className="public-service-strip reveal-on-scroll" id="services">
           <div className="service-strip-inner">
             <Link to="/admin" className="service-feature-card">
               <div className="service-card-icon hospital-icon"><Hospital size={22} /></div>
@@ -300,7 +336,7 @@ export default function Landing() {
         </section>
 
         {/* How It Works Section */}
-        <section className="public-section" id="how-it-works">
+        <section className="public-section reveal-on-scroll" id="how-it-works">
           <div className="section-intro">
             <div>
               <span className="public-kicker">HOW IT WORKS</span>
@@ -320,7 +356,7 @@ export default function Landing() {
         </section>
 
         {/* Care Specialties Section */}
-        <section className="public-section specialties-section">
+        <section className="public-section specialties-section reveal-on-scroll">
           <div className="section-intro compact">
             <div>
               <span className="public-kicker">CARE, ORGANIZED</span>
@@ -340,7 +376,7 @@ export default function Landing() {
         </section>
 
         {/* Why QueueLess Section */}
-        <section className="public-section why-section" id="why-queueless">
+        <section className="public-section why-section reveal-on-scroll" id="why-queueless">
           <div className="section-intro">
             <div>
               <span className="public-kicker">WHY QUEUELESS</span>
@@ -360,7 +396,7 @@ export default function Landing() {
         </section>
 
         {/* Role Banner */}
-        <section className="role-banner">
+        <section className="role-banner reveal-on-scroll">
           <div className="role-banner-copy">
             <span className="public-kicker">ONE PLATFORM, THREE VIEWS</span>
             <h2>Everyone sees what matters to them.</h2>
@@ -386,7 +422,7 @@ export default function Landing() {
         </section>
 
         {/* Pricing / Value Section */}
-        <section className="public-section pricing-section" id="pricing">
+        <section className="public-section pricing-section reveal-on-scroll" id="pricing">
           <div className="section-intro">
             <div>
               <span className="public-kicker">TRANSPARENT VALUE</span>
@@ -424,7 +460,7 @@ export default function Landing() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="public-final-cta" id="contact">
+        <section className="public-final-cta reveal-on-scroll" id="contact">
           <div>
             <span className="public-kicker">READY WHEN YOU ARE</span>
             <h2>Make your next hospital visit feel simpler.</h2>
@@ -464,6 +500,17 @@ export default function Landing() {
           <span>Healthcare queue management platform</span>
         </div>
       </footer>
+
+      {/* Floating Back to Top Button */}
+      <button
+        type="button"
+        className={`back-to-top-btn ${showBackToTop ? "visible" : ""}`}
+        onClick={scrollToTop}
+        aria-label="Scroll back to top"
+        title="Back to top"
+      >
+        <ArrowUp size={20} />
+      </button>
     </div>
   );
 }

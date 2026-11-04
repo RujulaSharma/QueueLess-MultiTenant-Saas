@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock3, FileText, MapPin, Radio, Stethoscope, UserRound } from "lucide-react";
+import { ArrowLeft, Building2, CalendarDays, CheckCircle2, Clock3, FileText, MapPin, Radio, Stethoscope, UserRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
 
@@ -107,5 +107,5 @@ function ClinicalField({ title, value }) {
 }
 
 function BuildingIcon() {
-  return <div className="location-icon"><UserRound size={18}/></div>;
+  return <div className="location-icon"><Building2 size={18}/></div>;
 }

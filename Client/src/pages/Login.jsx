@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
@@ -38,7 +38,7 @@ function AuthCard({ title, subtitle, children }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <Link to="/" className="auth-brand"><span className="brand-mark"><Sparkles size={17} /></span> QueueLess</Link>
+        <Link to="/" className="auth-brand"><span className="brand-mark"><HeartPulse size={19} /></span> <span><b>Queue</b>Less</span></Link>
         <h1>{title}</h1>
         <p>{subtitle}</p>
         {children}
