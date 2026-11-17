@@ -176,7 +176,7 @@ export default function BusinessManagement() {
         <div className="form-two">
           <label className="field">
             <span>Hospital name</span>
-            <input required value={form.name} onChange={(e) => change("name", e.target.value)} placeholder="AIMA Hospital" />
+            <input required value={form.name} onChange={(e) => change("name", e.target.value)} placeholder="Hospital" />
           </label>
           <label className="field">
             <span>Category</span>

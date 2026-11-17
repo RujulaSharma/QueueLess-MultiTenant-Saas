@@ -87,6 +87,16 @@ const appointmentSchema = new mongoose.Schema(
 appointmentSchema.index({ business: 1, appointmentDate: 1 });
 appointmentSchema.index({ customer: 1, appointmentDate: 1 });
 appointmentSchema.index({ service: 1, appointmentDate: 1 });
-appointmentSchema.index({ doctor: 1, appointmentDate: 1, scheduledTime: 1 });
+appointmentSchema.index(
+  { business: 1, doctor: 1, appointmentDate: 1, scheduledTime: 1 },
+  {
+    name: "unique_occupied_doctor_slot",
+    unique: true,
+    partialFilterExpression: {
+      doctor: { $type: "objectId" },
+      status: { $in: require("../services/appointmentSlots").occupiedStatuses },
+    },
+  }
+);
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

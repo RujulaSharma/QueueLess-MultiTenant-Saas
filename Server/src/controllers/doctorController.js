@@ -1,3 +1,4 @@
+const { timeRepresentations, consultationTimes, occupiedStatuses, parseAppointmentDate, dayBounds, calendarDate } = require("../services/appointmentSlots");
 const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const Business = require("../models/Business");
@@ -12,8 +13,12 @@ const listPublicDoctors = async (req, res) => {
     if (!mongoose.isValidObjectId(departmentId)) {
       return res.status(400).json({ success: false, message: "Valid department is required." });
     }
-    const doctors = await Doctor.find({ department: departmentId, status: "ACTIVE" })
-      .populate("user", "name email")
+    const department = await Department.findById(departmentId).select("hospital isActive");
+    if (!department?.isActive || !await Business.exists({ _id: department.hospital, isActive: true })) {
+      return res.status(404).json({ success: false, message: "Department not found." });
+    }
+    const doctors = await Doctor.find({ department: departmentId, hospital: department.hospital, status: "ACTIVE" })
+      .populate("user", "name")
       .populate("department", "name code")
       .select("user department designation specialization experienceYears consultationFee status");
     res.json({ success: true, doctors });
@@ -30,18 +35,22 @@ const getDoctorAvailability = async (req, res) => {
       return res.status(400).json({ success: false, message: "Doctor and date are required." });
     }
     const doctor = await Doctor.findOne({ _id: doctorId, status: "ACTIVE" });
-    if (!doctor) return res.status(404).json({ success: false, message: "Doctor not found." });
-    const start = new Date(`${date}T00:00:00`);
-    if (Number.isNaN(start.getTime())) return res.status(400).json({ success: false, message: "Invalid date." });
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+    const activeHospital = doctor && await Business.exists({ _id: doctor.hospital, isActive: true });
+    const activeDepartment = activeHospital && await Department.exists({ _id: doctor.department, hospital: doctor.hospital, isActive: true });
+    if (!activeDepartment) return res.status(404).json({ success: false, message: "Doctor not found." });
+    const dateValue = parseAppointmentDate(date);
+    if (!dateValue) return res.status(400).json({ success: false, message: "Invalid date." });
+    const { start, end } = dayBounds(dateValue);
     const Appointment = require("../models/Appointment");
     const appointments = await Appointment.find({
       doctor: doctor._id,
+      business: doctor.hospital,
       appointmentDate: { $gte: start, $lt: end },
-      status: { $nin: ["CANCELLED", "NO_SHOW"] },
+      status: { $in: occupiedStatuses },
     }).select("scheduledTime");
-    res.json({ success: true, bookedTimes: appointments.map((a) => a.scheduledTime) });
+    const bookedTimes = appointments.map((appointment) => appointment.scheduledTime);
+    const availableTimes = start < calendarDate() ? [] : consultationTimes.filter((time) => !timeRepresentations(time).some((value) => bookedTimes.includes(value)));
+    res.json({ success: true, bookedTimes, availableTimes });
   } catch (error) {
     console.error("getDoctorAvailability:", error);
     res.status(500).json({ success: false, message: "Failed to load availability." });

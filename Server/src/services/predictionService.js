@@ -8,6 +8,7 @@ const calculateWaitPrediction = async ({
   businessId,
   serviceId,
   targetQueueId = null,
+  doctorId,
 }) => {
   const service = await Service.findById(serviceId).select(
     "averageDuration bufferTime"
@@ -35,8 +36,9 @@ const calculateWaitPrediction = async ({
   const queue = await Queue.find({
     business: businessId,
     service: serviceId,
+    ...(doctorId !== undefined ? { doctor: doctorId } : {}),
     status: { $in: ACTIVE_STATUSES },
-  }).sort({ priority: -1, joinedAt: 1 });
+  }).sort({ priority: 1, joinedAt: 1, _id: 1 });
 
   const targetIndex = targetQueueId
     ? queue.findIndex((entry) => String(entry._id) === String(targetQueueId))
@@ -65,11 +67,12 @@ const calculateWaitPrediction = async ({
     waitingAhead * (averageDuration + bufferTime);
 
   const currentServiceLoad =
-    servingCount > 0
-      ? Math.round((averageDuration + bufferTime) / Math.max(servingCount, 1))
+    servingCount + calledCount > 0
+      ? Math.round(averageDuration + bufferTime)
       : 0;
 
-  const estimatedWaitMinutes = Math.max(
+  const inConsultation = targetIndex >= 0 && queue[targetIndex].status !== "WAITING";
+  const estimatedWaitMinutes = inConsultation ? 0 : Math.max(
     0,
     Math.round(baseWait + currentServiceLoad)
   );

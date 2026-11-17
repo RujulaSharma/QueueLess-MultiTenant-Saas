@@ -123,7 +123,8 @@ async function runWorkspaceTests() {
 
     console.log("\n🎉 ALL ALG-WEB-01 WORKSPACE TESTS PASSED SUCCESSFULLY!\n");
   } catch (err) {
-    console.error("❌ Workspace verification test error:", err);
+    console.error("Workspace verification test error:", err);
+    process.exitCode = 1;
   } finally {
     await mongoose.connection.close();
   }

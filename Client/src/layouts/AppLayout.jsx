@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate, Link } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   CalendarDays,
@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const isAdmin = user?.role === "ADMIN";
   const isDoctor = user?.role === "DOCTOR" || user?.role === "STAFF";
 
@@ -67,6 +68,7 @@ export default function AppLayout() {
             <NavLink
               key={to}
               to={to}
+              end={to === "/admin" || to === "/appointments"}
               className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
             >
               <Icon size={18} />
@@ -99,7 +101,7 @@ export default function AppLayout() {
             className="mobile-account-link mobile-logout"
             onClick={() => {
                 logout();
-                window.location.href = "/";
+                navigate("/");
               }}
           >
             <LogOut size={16} />
@@ -134,7 +136,7 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      <main className="main-content"><Outlet /></main>
+      <main className="main-content"><div className="route-content" key={pathname}><Outlet /></div></main>
     </div>
   );
 }

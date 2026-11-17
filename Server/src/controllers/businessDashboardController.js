@@ -7,11 +7,7 @@ const Doctor = require("../models/Doctor");
 const Queue = require("../models/Queue");
 const Appointment = require("../models/Appointment");
 
-const startOfDay = (date = new Date()) => {
-  const value = new Date(date);
-  value.setHours(0, 0, 0, 0);
-  return value;
-};
+const { calendarDate } = require("../services/appointmentSlots");
 
 const getBusinessDashboard = async (req, res, next) => {
   try {
@@ -26,13 +22,13 @@ const getBusinessDashboard = async (req, res, next) => {
       }
     }
 
-    const todayStart = startOfDay();
+    const todayStart = calendarDate();
     const tomorrow = new Date(todayStart);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     const sevenDaysAgo = new Date(todayStart);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 6);
     const thirtyDaysAgo = new Date(todayStart);
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
 
     const [business, services, departments, doctorCount, activeDoctorCount, customerCount, activeQueue, todayAppointments, recentAppointments, doctors] =
       await Promise.all([
@@ -49,7 +45,7 @@ const getBusinessDashboard = async (req, res, next) => {
           .populate("service", "name averageDuration price")
           .populate("department", "name code")
           .populate({ path: "doctor", populate: { path: "user", select: "name" } })
-          .sort({ status: 1, priority: -1, joinedAt: 1 })
+          .sort({ status: 1, priority: 1, joinedAt: 1 })
           .limit(50),
         Appointment.find({ business: businessId, appointmentDate: { $gte: todayStart, $lt: tomorrow } })
           .populate("customer", "name email")
@@ -168,11 +164,11 @@ const getBusinessDashboard = async (req, res, next) => {
     const dayMap = new Map();
     for (let i = 0; i < 7; i += 1) {
       const date = new Date(sevenDaysAgo);
-      date.setDate(sevenDaysAgo.getDate() + i);
+      date.setUTCDate(sevenDaysAgo.getUTCDate() + i);
       dayMap.set(date.toISOString().slice(0, 10), { date: date.toISOString().slice(0, 10), appointments: 0, completed: 0, cancelled: 0, revenue: 0 });
     }
     recentAppointments.forEach((appointment) => {
-      const key = startOfDay(appointment.appointmentDate).toISOString().slice(0, 10);
+      const key = appointment.appointmentDate.toISOString().slice(0, 10);
       const row = dayMap.get(key);
       if (!row) return;
       row.appointments += 1;

@@ -22,8 +22,12 @@ import {
   Sparkles,
   ChevronRight,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useAuth } from "../context/AuthContext";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const features = [
   { icon: CalendarCheck2, title: "Easy appointments", text: "Choose a department, doctor and convenient time without phone calls or paperwork." },
@@ -44,6 +48,7 @@ const specialties = ["Dental", "Blood Test", "BP Check", "X-Ray", "General Medic
 export default function Landing() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const page = useRef(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -62,25 +67,27 @@ export default function Landing() {
   }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-          }
+    const motion = gsap.matchMedia();
+    motion.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.from(".hero-copy > *", { y: 16, opacity: 0, stagger: 0.07, duration: 0.55, ease: "power2.out" });
+      gsap.utils.toArray(".reveal-on-scroll", page.current).forEach((section) => {
+        gsap.from(section, {
+          opacity: 0, y: 18, duration: 0.6, ease: "power2.out",
+          scrollTrigger: { trigger: section, start: "top 92%", once: true },
         });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-    );
-
-    const elements = document.querySelectorAll(".reveal-on-scroll");
-    elements.forEach((el) => observer.observe(el));
-
-    return () => observer.disconnect();
+      });
+    }, page.current);
+    motion.add("(min-width: 1000px) and (prefers-reduced-motion: no-preference)", () => {
+      gsap.to(".hero-visual", {
+        y: -24, ease: "none",
+        scrollTrigger: { trigger: ".public-hero", start: "top top", end: "bottom top", scrub: true },
+      });
+    }, page.current);
+    return () => motion.revert();
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
   };
 
   const handleLogout = () => {
@@ -90,7 +97,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="public-home">
+    <div className="public-home" ref={page}>
       {/* Floating Header Navigation matching Reference Design */}
       <header className={`public-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="public-nav-inner">
@@ -104,8 +111,7 @@ export default function Landing() {
             <a href="#how-it-works" onClick={closeMobile}>How it works</a>
             <a href="#services" onClick={closeMobile}>Services</a>
             <a href="#why-queueless" onClick={closeMobile}>Why QueueLess</a>
-            <a href="#pricing" onClick={closeMobile}>Pricing</a>
-            <a href="#contact" onClick={closeMobile}>Contact</a>
+            <a href="#contact" onClick={closeMobile}>Get started</a>
 
             {/* Mobile auth links */}
             <div className="mobile-home-auth">
@@ -146,15 +152,15 @@ export default function Landing() {
               <>
                 <Link className="public-profile-btn" to="/login">
                   <UserRound size={16} />
-                  <span>Profile</span>
+                  <span>Sign in</span>
                 </Link>
-                <Link className="public-cta-nav" to="/book">
-                  <span>Book an appointment</span>
+                <Link className="public-cta-nav" to="/register">
+                  <span>Create patient account</span>
                   <ArrowRight size={15} />
                 </Link>
               </>
             )}
-            <button className="mobile-menu" aria-label="Toggle navigation" onClick={() => setMobileOpen(v => !v)}>
+            <button className="mobile-menu" aria-label="Toggle navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(v => !v)}>
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
@@ -169,19 +175,19 @@ export default function Landing() {
             <div className="hero-copy">
               <div className="public-eyebrow">
                 <span className="pulse-dot" />
-                SMARTER HEALTHCARE VISITS
+                OUTPATIENT APPOINTMENTS
               </div>
               <h1 className="hero-title">
-                Healthcare that<br />
-                <span className="hero-highlight">moves with you.</span>
+                Book your visit.<br />
+                <span className="hero-highlight">Know your turn.</span>
               </h1>
               <p className="hero-lead">
-                QueueLess connects patients, doctors and hospitals in one simple system. Book appointments, check in, follow the live queue and get seen without the guesswork.
+                Book a consultation with your hospital, check in when you arrive, and track your place in the queue from your phone.
               </p>
 
               <div className="public-hero-actions">
-                <Link className="public-cta hero-button" to={user ? "/book" : "/register"}>
-                  <span>Book an appointment</span>
+                <Link className="public-cta hero-button" to={user ? (user.role === "CUSTOMER" ? "/book" : dashboardPath) : "/register"}>
+                  <span>{user && user.role !== "CUSTOMER" ? "Open dashboard" : "Book an appointment"}</span>
                   <ArrowRight size={18} />
                 </Link>
                 <a className="public-secondary-button" href="#how-it-works">
@@ -421,44 +427,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Pricing / Value Section */}
-        <section className="public-section pricing-section reveal-on-scroll" id="pricing">
-          <div className="section-intro">
-            <div>
-              <span className="public-kicker">TRANSPARENT VALUE</span>
-              <h2>Designed to scale with your healthcare facility.</h2>
-            </div>
-            <p>From single doctor practices to multi-department multi-tenant hospital networks.</p>
-          </div>
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-tag">Standard Clinic</div>
-              <div className="pricing-price">Free <span>/ for patients</span></div>
-              <p>Direct patient appointment booking, real-time token tracking, and wait time alerts.</p>
-              <ul className="pricing-features">
-                <li><CheckCircle2 size={16} /> Instant token generation</li>
-                <li><CheckCircle2 size={16} /> Real-time queue tracker</li>
-                <li><CheckCircle2 size={16} /> Notification on turn</li>
-              </ul>
-              <Link to="/book" className="button secondary full">Book now</Link>
-            </div>
-
-            <div className="pricing-card featured">
-              <div className="pricing-badge">Most Popular</div>
-              <div className="pricing-tag">Hospital & Center</div>
-              <div className="pricing-price">Professional <span>/ SaaS</span></div>
-              <p>Full multi-tenant department management, doctor dashboards, analytics, and collaborative workspaces.</p>
-              <ul className="pricing-features">
-                <li><CheckCircle2 size={16} /> Multi-department queue routing</li>
-                <li><CheckCircle2 size={16} /> Live doctor clinical portals</li>
-                <li><CheckCircle2 size={16} /> Collaborative workspace & tasks</li>
-                <li><CheckCircle2 size={16} /> Real-time Socket.IO synchronization</li>
-              </ul>
-              <Link to="/register" className="button primary full">Get Started</Link>
-            </div>
-          </div>
-        </section>
-
         {/* Final CTA Section */}
         <section className="public-final-cta reveal-on-scroll" id="contact">
           <div>
@@ -467,8 +435,8 @@ export default function Landing() {
             <p>Start with a patient account, or sign in to your existing QueueLess workspace.</p>
           </div>
           <div className="final-cta-actions">
-            <Link className="public-cta hero-button" to={user ? "/book" : "/register"}>
-              <span>{user ? "Book appointment" : "Create account"}</span>
+            <Link className="public-cta hero-button" to={user ? (user.role === "CUSTOMER" ? "/book" : dashboardPath) : "/register"}>
+              <span>{user ? (user.role === "CUSTOMER" ? "Book appointment" : "Open dashboard") : "Create patient account"}</span>
               <ArrowRight size={18} />
             </Link>
             <Link className="public-secondary-button" to={user ? dashboardPath : "/login"}>
@@ -485,12 +453,11 @@ export default function Landing() {
             <span className="public-brand-mark"><HeartPulse size={19} /></span>
             <span><b>Queue</b>Less</span>
           </Link>
-          <p>Appointments and live queues, brought into one calm digital workflow.</p>
+          <p>Outpatient scheduling and live queue tracking.</p>
           <div className="footer-links">
             <a href="#home">Home</a>
             <a href="#how-it-works">How it works</a>
             <a href="#services">Services</a>
-            <a href="#pricing">Pricing</a>
             <Link to="/login">Login</Link>
             <Link to="/register">Register</Link>
           </div>

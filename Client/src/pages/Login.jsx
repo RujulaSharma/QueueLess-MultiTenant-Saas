@@ -14,8 +14,10 @@ export default function Login() {
     event.preventDefault();
     setError("");
     try {
-      await login(form);
-      navigate(location.state?.from?.pathname || "/", { replace: true });
+      const { user } = await login(form);
+      const requested = location.state?.from?.pathname;
+      const destination = user.role === "ADMIN" ? "/admin" : "/dashboard";
+      navigate(requested === "/book" && user.role !== "CUSTOMER" ? destination : requested || destination, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Unable to sign in.");
     }
@@ -24,8 +26,8 @@ export default function Login() {
   return (
     <AuthCard title="Welcome back" subtitle="Sign in to your QueueLess workspace.">
       <form onSubmit={submit} className="form">
-        <label>Email<input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-        <label>Password<input type="password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+        <label>Email<input type="email" autoComplete="username" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+        <label>Password<input type="password" autoComplete="current-password" required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
         {error && <div className="error-box">{error}</div>}
         <button className="button primary full" disabled={loading}>{loading ? "Signing in..." : "Sign in"}</button>
       </form>

@@ -22,6 +22,8 @@ const doctorDashboardRoutes = require("./routes/doctorDashboardRoutes");
 const adminBusinessRoutes = require("./routes/adminBusinessRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const taskRoutes = require("./routes/taskRoutes");
+const Queue = require("./models/Queue");
+const Appointment = require("./models/Appointment");
 const Doctor = require("./models/Doctor");
 
 dotenv.config();
@@ -43,37 +45,7 @@ const io = new Server(server, {
   cors: { origin: CLIENT_URL, credentials: true },
 });
 
-io.on("connection", (socket) => {
-  socket.on("joinBusinessRoom", (businessId) => {
-    if (businessId) {
-      socket.join(`business:${String(businessId)}`);
-    }
-  });
-
-  socket.on("leaveBusinessRoom", (businessId) => {
-    if (businessId) {
-      socket.leave(`business:${String(businessId)}`);
-    }
-  });
-
-  socket.on("joinProjectRoom", (projectId) => {
-    if (projectId) {
-      socket.join(`project:${String(projectId)}`);
-    }
-  });
-
-  socket.on("leaveProjectRoom", (projectId) => {
-    if (projectId) {
-      socket.leave(`project:${String(projectId)}`);
-    }
-  });
-
-  console.log(`🔌 Client connected: ${socket.id}`);
-
-  socket.on("disconnect", () => {
-    console.log(`🔌 Client disconnected: ${socket.id}`);
-  });
-});
+require("./services/realtimeService")(io);
 
 app.set("io", io);
 
@@ -127,11 +99,11 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error("❌ Server error:", err);
+  console.error("Server error:", err.name, err.code || err.status || "");
 
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || "Internal server error",
+    message: err.status && err.status < 500 ? err.message : "Internal server error",
   });
 });
 
@@ -145,8 +117,8 @@ async function connectDatabase() {
   }
 
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    await Doctor.syncIndexes();
+    await mongoose.connect(process.env.MONGO_URI, process.env.MONGO_DB_NAME ? { dbName: process.env.MONGO_DB_NAME } : {});
+    await Promise.all([Doctor.init(), Appointment.init(), Queue.init()]);
     console.log("🍃 MongoDB connected");
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error.message);
@@ -158,12 +130,13 @@ async function connectDatabase() {
 async function startServer() {
   await connectDatabase();
 
-  server.listen(PORT, () => {
+  server.listen(Number(PORT), () => {
+    const { port } = server.address();
     console.log(`
 🚀 QueueLess Server Started
 
-📡 API:       http://localhost:${PORT}
-❤️  Health:    http://localhost:${PORT}/api/health
+📡 API:       http://localhost:${port}
+❤️  Health:    http://localhost:${port}/api/health
 🔌 Socket.IO: Ready
 🍃 MongoDB:   ${
       mongoose.connection.readyState === 1 ? "Connected" : "Not configured"
@@ -178,7 +151,7 @@ startServer();
 async function shutdown(signal) {
   console.log(`\n${signal} received. Shutting down QueueLess...`);
 
-  server.close(async () => {
+  io.close(async () => {
     if (mongoose.connection.readyState !== 0) {
       await mongoose.connection.close();
     }

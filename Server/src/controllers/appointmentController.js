@@ -6,20 +6,12 @@ const Department = require("../models/Department");
 const Queue = require("../models/Queue");
 const Doctor = require("../models/Doctor");
 
-const ACTIVE_QUEUE_STATUSES = ["WAITING", "CALLED", "SERVING"];
+const { timeRepresentations, consultationTimes, occupiedStatuses, parseAppointmentDate, calendarDate, dayBounds } = require("../services/appointmentSlots");
+const { emitQueueUpdate } = require("../services/queueService");
 
-function dayBounds(dateValue = new Date()) {
-  const d = new Date(dateValue);
-  const start = new Date(d);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start, end };
-}
-
-function emit(io, businessId, event, payload) {
+function emit(io, businessId, event) {
   if (!io || !businessId) return;
-  io.to(`business:${businessId}`).emit(event, payload);
+  io.to(`business:${businessId}`).emit(event, { businessId: String(businessId) });
 }
 
 exports.createAppointment = async (req, res) => {
@@ -38,10 +30,18 @@ exports.createAppointment = async (req, res) => {
     if (doctorId && !mongoose.isValidObjectId(doctorId)) {
       return res.status(400).json({ success: false, message: "Invalid doctor." });
     }
-    if (!appointmentDate || !scheduledTime) {
+    if (req.user.role !== "CUSTOMER" && String(req.user.businessId) !== businessId) {
+      return res.status(403).json({ success: false, message: "You can only book within your hospital." });
+    }
+    if (typeof appointmentDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)
+        || typeof scheduledTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) {
       return res.status(400).json({ success: false, message: "Appointment date and time are required." });
     }
 
+    const bookingDate = parseAppointmentDate(appointmentDate);
+    if (!bookingDate || bookingDate < calendarDate() || (doctorId && !consultationTimes.includes(scheduledTime))) {
+      return res.status(400).json({ success: false, message: "Choose a valid appointment date and available time." });
+    }
     const business = await Business.findOne({ _id: businessId, isActive: true });
     if (!business) return res.status(404).json({ success: false, message: "Hospital not found." });
 
@@ -53,10 +53,10 @@ exports.createAppointment = async (req, res) => {
       if (department.legacyService) service = await Service.findOne({ _id: department.legacyService, business: businessId, isActive: true });
     } else if (serviceId) {
       service = await Service.findOne({ _id: serviceId, business: businessId, isActive: true });
-      if (service?.department) department = await Department.findById(service.department);
+      if (service?.department) department = await Department.findOne({ _id: service.department, hospital: businessId, isActive: true });
     }
 
-    if (!service) return res.status(404).json({ success: false, message: "Bookable department not found." });
+    if (!service || (service.department && !department)) return res.status(404).json({ success: false, message: "Bookable department not found." });
 
     let doctor = null;
     if (doctorId) {
@@ -85,9 +85,9 @@ exports.createAppointment = async (req, res) => {
 
     const duplicateQuery = {
       business: businessId,
-      appointmentDate: new Date(appointmentDate),
-      scheduledTime,
-      status: { $nin: ["CANCELLED", "NO_SHOW"] },
+      appointmentDate: { $gte: bookingDate, $lt: dayBounds(bookingDate).end },
+      scheduledTime: { $in: timeRepresentations(scheduledTime) },
+      status: { $in: occupiedStatuses },
     };
     if (doctor?._id) {
       duplicateQuery.doctor = doctor._id;
@@ -106,7 +106,7 @@ exports.createAppointment = async (req, res) => {
       department: department?._id || service.department || null,
       service: service._id,
       customer,
-      appointmentDate: new Date(appointmentDate),
+      appointmentDate: bookingDate,
       scheduledTime,
       notes: notes || "",
       status: "CONFIRMED",
@@ -119,7 +119,7 @@ exports.createAppointment = async (req, res) => {
       .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
       .populate("customer", "name email");
 
-    emit(req.app.get("io"), businessId, "appointment:created", populated);
+    emit(req.app.get("io"), businessId, "appointment:created");
 
     return res.status(201).json({
       success: true,
@@ -127,7 +127,8 @@ exports.createAppointment = async (req, res) => {
       appointment: populated,
     });
   } catch (error) {
-    console.error("createAppointment:", error);
+    if (error.code === 11000) return res.status(409).json({ success: false, message: "This time has already been booked." });
+    console.error("createAppointment failed:", error.name);
     return res.status(500).json({ success: false, message: "Failed to create appointment." });
   }
 };
@@ -178,7 +179,7 @@ exports.getAppointmentById = async (req, res) => {
         return res.status(403).json({ success: false, message: "You do not have permission to view this appointment." });
       }
     } else if (["ADMIN", "STAFF"].includes(req.user.role)) {
-      if (req.user.businessId && String(appointment.business?._id || appointment.business) !== String(req.user.businessId)) {
+      if (!req.user.businessId || String(appointment.business?._id || appointment.business) !== String(req.user.businessId)) {
         return res.status(403).json({ success: false, message: "You do not have permission to view this appointment." });
       }
     }
@@ -199,7 +200,9 @@ exports.getBusinessAppointments = async (req, res) => {
 
     const filter = { business: businessId };
     if (req.query.date) {
-      const { start, end } = dayBounds(req.query.date);
+      const date = parseAppointmentDate(req.query.date);
+      if (!date) return res.status(400).json({ success: false, message: "Invalid appointment date." });
+      const { start, end } = dayBounds(date);
       filter.appointmentDate = { $gte: start, $lt: end };
     }
 
@@ -220,80 +223,54 @@ exports.getBusinessAppointments = async (req, res) => {
 
 async function createQueueEntryForAppointment(appointment, io) {
   if (appointment.queueEntry) {
-    const existing = await Queue.findById(appointment.queueEntry);
+    const existing = await Queue.findOne({ _id: appointment.queueEntry, business: appointment.business, customer: appointment.customer });
     if (existing) return existing;
   }
 
-  const activeExisting = await Queue.findOne({
-    business: appointment.business,
-    doctor: appointment.doctor || null,
-    department: appointment.department || null,
-    service: appointment.service,
-    customer: appointment.customer,
-    status: { $in: ACTIVE_QUEUE_STATUSES },
-  });
-
-  if (activeExisting) {
-    appointment.queueEntry = activeExisting._id;
-    appointment.status = "CHECKED_IN";
-    appointment.checkedInAt = new Date();
-    await appointment.save();
-    return activeExisting;
-  }
-
-  const tokenScope = {
+  const scope = {
     business: appointment.business,
     doctor: appointment.doctor || null,
     department: appointment.department || null,
     service: appointment.service,
   };
-
-  const lastToken = await Queue.findOne(tokenScope)
-    .sort({ tokenNumber: -1 })
-    .select("tokenNumber");
-
-  const service = await Service.findById(appointment.service).select("averageDuration");
-  const waitingCount = await Queue.countDocuments({
-    business: appointment.business,
-    doctor: appointment.doctor || null,
-    department: appointment.department || null,
-    service: appointment.service,
-    status: { $in: ACTIVE_QUEUE_STATUSES },
-  });
-
-  const queueEntry = await Queue.create({
-    business: appointment.business,
-    doctor: appointment.doctor || null,
-    department: appointment.department || null,
-    service: appointment.service,
+  const legacy = await Queue.findOne({
+    ...scope,
     customer: appointment.customer,
-    tokenNumber: (lastToken?.tokenNumber || 0) + 1,
-    status: "WAITING",
-    priority: "HIGH",
-    position: waitingCount + 1,
-    estimatedWaitTime: (waitingCount + 1) * Number(service?.averageDuration || 15),
     notes: `Appointment check-in: ${appointment._id}`,
   });
 
-  appointment.queueEntry = queueEntry._id;
-  appointment.status = "CHECKED_IN";
-  appointment.checkedInAt = new Date();
-  await appointment.save();
+  let queueEntry = legacy;
+  if (!queueEntry) {
+    const lastToken = await Queue.findOne(scope).sort({ tokenNumber: -1 }).select("tokenNumber");
+    try {
+      queueEntry = await Queue.findOneAndUpdate(
+        { appointment: appointment._id, business: appointment.business },
+        { $setOnInsert: {
+          ...scope,
+          customer: appointment.customer,
+          tokenNumber: (lastToken?.tokenNumber || 0) + 1,
+          status: "WAITING",
+          priority: "HIGH",
+        } },
+        { upsert: true, returnDocument: "after" }
+      );
+    } catch (error) {
+      if (error.code !== 11000 || !error.keyPattern?.appointment) throw error;
+      queueEntry = await Queue.findOne({ appointment: appointment._id, business: appointment.business });
+      if (!queueEntry) throw error;
+    }
+  }
 
-  emit(io, appointment.business, "queue:updated", {
-    reason: "appointment_checked_in",
-    businessId: appointment.business,
-    doctorId: appointment.doctor || null,
-    departmentId: appointment.department || null,
-    queueEntry,
+  await Appointment.updateOne(
+    { _id: appointment._id, business: appointment.business, status: { $in: ["SCHEDULED", "CONFIRMED", "CHECKED_IN"] } },
+    { $set: { queueEntry: queueEntry._id, status: "CHECKED_IN", checkedInAt: appointment.checkedInAt || new Date() } }
+  );
+  await emitQueueUpdate(io, appointment.business, appointment.service, "CHECKED_IN", {
+    doctorId: appointment.doctor,
+    departmentId: appointment.department,
   });
-  emit(io, appointment.business, "appointment:updated", {
-    businessId: appointment.business,
-    appointment,
-    queueEntry,
-  });
-
-  return queueEntry;
+  emit(io, appointment.business, "appointment:updated");
+  return Queue.findById(queueEntry._id);
 }
 
 exports.checkInAppointment = async (req, res) => {
@@ -320,13 +297,8 @@ exports.checkInAppointment = async (req, res) => {
       });
     }
 
-    const now = new Date();
-    const appointmentDay = new Date(appointment.appointmentDate);
-    appointmentDay.setHours(0, 0, 0, 0);
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-
-    if (appointmentDay.getTime() !== today.getTime()) {
+    const { start, end } = dayBounds();
+    if (appointment.appointmentDate < start || appointment.appointmentDate >= end) {
       return res.status(400).json({
         success: false,
         message: "Check-in is available on the appointment date.",
@@ -345,7 +317,7 @@ exports.checkInAppointment = async (req, res) => {
     return res.json({
       success: true,
       message: "Checked in successfully. You are now in the live queue.",
-      appointment,
+      appointment: await Appointment.findById(appointment._id),
       queueEntry: populated,
     });
   } catch (error) {
@@ -364,7 +336,8 @@ exports.updateAppointmentStatus = async (req, res) => {
     }
 
     const filter = { _id: req.params.id };
-    if (req.user.businessId) filter.business = req.user.businessId;
+    if (!req.user.businessId) return res.status(403).json({ success: false, message: "Hospital assignment required." });
+    filter.business = req.user.businessId;
 
     const appointment = await Appointment.findOne(filter);
     if (!appointment) {
@@ -372,6 +345,9 @@ exports.updateAppointmentStatus = async (req, res) => {
     }
 
     if (status === "CHECKED_IN") {
+      if (!["SCHEDULED", "CONFIRMED", "CHECKED_IN"].includes(appointment.status)) {
+        return res.status(409).json({ success: false, message: "This visit cannot be checked in." });
+      }
       const queueEntry = await createQueueEntryForAppointment(appointment, req.app.get("io"));
       const populated = await Appointment.findById(appointment._id)
         .populate("customer", "name email")
@@ -380,11 +356,14 @@ exports.updateAppointmentStatus = async (req, res) => {
         .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
         .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
 
-      emit(req.app.get("io"), appointment.business, "appointment:updated", populated);
+      emit(req.app.get("io"), appointment.business, "appointment:updated");
 
       return res.json({ success: true, appointment: populated, queueEntry });
     }
 
+    if (appointment.status === "CHECKED_IN" || ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(appointment.status)) {
+      return res.status(409).json({ success: false, message: "Use the active queue to update checked-in visits. Closed visits cannot be edited." });
+    }
     appointment.status = status;
     if (status === "COMPLETED") appointment.completedAt = new Date();
 
@@ -397,7 +376,7 @@ exports.updateAppointmentStatus = async (req, res) => {
       .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
       .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
 
-    emit(req.app.get("io"), appointment.business, "appointment:updated", populated);
+    emit(req.app.get("io"), appointment.business, "appointment:updated");
 
     return res.json({ success: true, appointment: populated });
   } catch (error) {
@@ -421,24 +400,17 @@ exports.cancelMyAppointment = async (req, res) => {
     await appointment.save();
 
     if (appointment.queueEntry) {
-      const queueEntry = await Queue.findById(appointment.queueEntry);
-      if (queueEntry) {
-        queueEntry.status = "CANCELLED";
-        await queueEntry.save();
-      }
+      const queueEntry = await Queue.findOneAndUpdate(
+        { _id: appointment.queueEntry, business: appointment.business, customer: appointment.customer, status: { $in: ["WAITING", "CALLED"] } },
+        { $set: { status: "CANCELLED", position: 0, estimatedWaitTime: 0 } },
+        { returnDocument: "after" }
+      );
+      if (!queueEntry) return res.status(409).json({ success: false, message: "This visit has already moved past check-in." });
+      await emitQueueUpdate(req.app.get("io"), queueEntry.business, queueEntry.service, "APPOINTMENT_CANCELLED", { doctorId: queueEntry.doctor, departmentId: queueEntry.department });
     }
-
-    emit(req.app.get("io"), appointment.business, "appointment:updated", {
-      businessId: appointment.business,
-      appointment,
-    });
-    if (appointment.queueEntry) {
-      const queueEntry = await Queue.findById(appointment.queueEntry);
-      if (queueEntry) {
-        const { emitQueueUpdate } = require("../services/queueService");
-        await emitQueueUpdate(req.app.get("io"), queueEntry.business, queueEntry.service, "APPOINTMENT_CANCELLED", { doctorId: queueEntry.doctor, departmentId: queueEntry.department });
-      }
-    }
+    appointment.status = "CANCELLED";
+    await appointment.save();
+    emit(req.app.get("io"), appointment.business, "appointment:updated");
     return res.json({ success: true, message: "Appointment cancelled.", appointment });
   } catch (error) {
     console.error("cancelMyAppointment:", error);

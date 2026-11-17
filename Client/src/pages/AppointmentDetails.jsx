@@ -52,7 +52,7 @@ export default function AppointmentDetails() {
       <section className="detail-hero panel">
         <div className="detail-hero-main">
           <div className="appointment-icon"><CalendarDays size={21}/></div>
-          <div><span className="eyebrow">Scheduled visit</span><h2>{new Date(appointment.appointmentDate).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h2><p><Clock3 size={14}/> {appointment.scheduledTime}</p></div>
+          <div><span className="eyebrow">Scheduled visit</span><h2>{new Date(appointment.appointmentDate).toLocaleDateString("en-IN", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h2><p><Clock3 size={14}/> {appointment.scheduledTime}</p></div>
         </div>
         {queue && <div className="detail-token"><Radio size={16}/><span>Token</span><strong>#{queue.tokenNumber}</strong></div>}
       </section>
@@ -80,7 +80,7 @@ export default function AppointmentDetails() {
           <div className="detail-timeline">
             <div className={appointment.createdAt ? "done" : ""}><CheckCircle2 size={15}/><span>Booked</span></div>
             <div className={appointment.checkedInAt ? "done" : ""}><Radio size={15}/><span>Checked in</span></div>
-            <div className={appointment.consultationStartedAt ? "done" : ""}><Stethoscope size={15}/><span>Consultation</span></div>
+            <div className={queue?.serviceStartedAt ? "done" : ""}><Stethoscope size={15}/><span>Consultation</span></div>
             <div className={appointment.completedAt ? "done" : ""}><CheckCircle2 size={15}/><span>Completed</span></div>
           </div>
         </section>
@@ -95,7 +95,7 @@ export default function AppointmentDetails() {
             {appointment.consultationNotes && <ClinicalField title="Doctor's notes" value={appointment.consultationNotes}/>} 
             {appointment.prescription && <ClinicalField title="Prescription / advice" value={appointment.prescription}/>} 
           </div>
-          {!appointment.diagnosis && !appointment.consultationNotes && !appointment.prescription && <p className="muted">Clinical notes will appear here after the doctor completes the consultation.</p>}
+          {!appointment.diagnosis && !appointment.consultationNotes && !appointment.prescription && <p className="muted">These notes were provided with the appointment.</p>}
         </section>
       )}
     </div>

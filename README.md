@@ -1,265 +1,151 @@
-# QueueLess | Multi-Tenant Healthcare SaaS & Collaborative Workspace
+# QueueLess
 
-<p align="center">
-  <img src="assets/queueless.png" alt="QueueLess SaaS Preview" width="100%">
-</p>
+QueueLess is a multi-tenant outpatient scheduling and queue management application. Patients can choose a consultation, check in on the day of their visit, and follow their place in the queue. Clinicians and hospital teams can coordinate the schedule and manage patient flow from role-specific dashboards.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Stack-MERN%20%2B%20Socket.IO-145C46?style=for-the-badge" alt="Stack" />
-  <img src="https://img.shields.io/badge/Design_System-Pistachio_%26_Warm_Cream-1F7A5A?style=for-the-badge" alt="Design System" />
-  <img src="https://img.shields.io/badge/Workspace-ALG--WEB--01_Compliant-DCE8C8?style=for-the-badge&labelColor=17231F" alt="Algothon Workspace" />
-  <img src="https://img.shields.io/badge/Concurrency-Optimistic_Version_Locking-24704F?style=for-the-badge" alt="Concurrency" />
-  <img src="https://img.shields.io/badge/Tests-100%25_Passing-success?style=for-the-badge" alt="Tests" />
-</p>
+## Problem
 
----
+Appointment books record when visits are expected. They rarely tell patients or staff what is happening after arrival. QueueLess connects booking, check-in, consultation, and reporting so staff can manage active visits and patients can see an estimated wait.
 
-## 🌿 Executive Summary
+## Features and roles
 
-**QueueLess** is an enterprise-grade multi-tenant healthcare appointment booking, live queue orchestration, and collaborative project management platform. Designed specifically for hospitals, multi-specialty clinics, and outpatient care centers, QueueLess eliminates waiting room ambiguity by syncing patients, doctors, and healthcare administrators into a calm, unified, real-time digital workflow.
+| Role | Capabilities |
+| --- | --- |
+| Patient | Browse active hospitals and doctors, book an available consultation, check in, track a queue token and estimated wait, and review appointment history |
+| Doctor | Review the assigned worklist, call the next patient, start and complete consultations, and mark no-shows |
+| Hospital admin | Set up the hospital, departments, and doctor accounts, monitor appointments and queues, and review hospital activity reports |
+| Staff | Use the hospital schedule and queue operations for an assigned hospital. The role remains supported for older accounts. |
 
-In addition to end-to-end outpatient workflow management, QueueLess incorporates an integrated **Collaborative Project Workspace (ALG-WEB-01)** enabling healthcare operations teams to coordinate initiatives, track clinical projects, manage tasks via Kanban and list views, and safely resolve simultaneous updates using robust **Optimistic Concurrency Control (Version Locking)**.
+The project workspace supports shared tasks, project membership, and task version checks.
 
----
+## Architecture
 
-## 🎨 Visual Identity & Master Design System
+The client uses React 19, React Router, Vite, Axios, Lucide, GSAP, and Socket.IO Client. The API uses Node.js, Express 5, MongoDB, Mongoose 9, Socket.IO 4, JWT, and bcrypt.
 
-QueueLess embodies a soothing, patient-first aesthetic that departs from cold clinical interfaces and neon gradients:
-
-- **Soft Pistachio Green (`#DCE8C8` / `#EAF1DE`)**: Evokes calm, healing, and clarity.
-- **Warm Cream (`#FFF8ED` / `#F4F1E7`)**: Organic warmth replacing harsh pure white `#FFFFFF`.
-- **Subtle Peach Accents (`#F7E1CF` / `#FBEDE1`)**: Gentle human warmth on status badges and cards.
-- **Deep Forest Green (`#145C46` / `#1F7A5A`)**: Authoritative branding, primary buttons, and tokens.
-- **Dark Charcoal (`#17231F`)**: High-contrast, highly readable typography.
-- **Scrolling Enhancements**: Smooth scroll behavior (`html { scroll-behavior: smooth }`), dynamic floating navbar elevation on scroll (`.public-nav.scrolled`), intersection-observer scroll reveals (`.reveal-on-scroll.is-visible`), organic drift animations (`@keyframes floatSlow`), sticky data table headers, and a floating Back-to-Top trigger.
-
----
-
-## 🌟 Core System Pillars
-
-### 1. Patient Portal
-- **Instant Booking**: Browse hospital departments, select verified doctors, choose convenient dates and real-time available time slots.
-- **Live Queue & Token Tracker**: Receive an automated sequential queue token upon check-in, tracking estimated wait times, remaining patients ahead, and real-time status transitions (`WAITING` ➔ `CALLED` ➔ `SERVING` ➔ `COMPLETED`).
-- **Comprehensive Visit Details**: Access consultation fees, clinic address with interactive icons, appointment timelines, and clinical notes/prescriptions.
-
-### 2. Clinical Portal (Doctor Dashboard)
-- **Real-Time Patient Queue**: View checked-in patients in order of arrival, call next in queue, initiate consultations, and complete visits.
-- **Clinical Records**: Document diagnosis, consultation notes, and patient advice directly into the permanent electronic visit log.
-- **Appointment Schedule**: Overview of daily bookings, status filtering (`CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW`), and patient limit controls.
-
-### 3. Hospital Administration
-- **Multi-Tenant Scoping**: Strict data isolation per hospital tenant (`businessId`), preventing cross-tenant leakage.
-- **Department & Doctor Management**: Create departments (e.g., Cardiology, Orthopedics, Pediatrics), assign consultation fees, configure doctor time slots, and monitor capacity.
-- **Operational Reports & Analytics**: Historical patient flow, average waiting duration, average consultation time, cancellation/no-show rates, and daily visit volume charts.
-
-### 4. Collaborative Project Workspace (ALG-WEB-01)
-- **Project Governance**: Create initiatives, designate project owners, set priorities (`LOW`, `MEDIUM`, `HIGH`, `URGENT`), and track milestone deadlines.
-- **Interactive Task Boards**: Multi-column Kanban board (`TODO`, `IN_PROGRESS`, `REVIEW`, `DONE`) with real-time status updates.
-- **Collaboration Strip**: Comment streams, assignee attribution, and attachment/file references.
-- **Optimistic Concurrency Control**: Prevents silent overwrite conflicts during simultaneous team edits via atomic version incrementation (`version` check). Stale edits return `HTTP 409 Conflict` with client notification.
-- **Real-Time Synchronization**: Instant broadcast of task status changes, comments, and project updates via Socket.IO project rooms.
-
----
-
-## 🏗 System Architecture
-
-```
-+-------------------------------------------------------------------------+
-|                               Frontend                                  |
-|  React 19 + Vite + React Router 7 + Lucide Icons + Socket.IO Client      |
-+-------------------------------------------------------------------------+
-                                    ▲
-                                    │ HTTP / WebSocket (Socket.IO)
-                                    ▼
-+-------------------------------------------------------------------------+
-|                                Backend                                  |
-|  Node.js + Express 5 + JWT Authentication + Role Middleware (RBAC)      |
-|  Real-time Socket Rooms: Hospital Room (`biz_*`), Project Room (`proj_*`)|
-+-------------------------------------------------------------------------+
-                                    ▲
-                                    │ Mongoose 9 ODM
-                                    ▼
-+-------------------------------------------------------------------------+
-|                           MongoDB Database                              |
-|  Users · Businesses · Departments · Doctors · Services · Appointments   |
-|               Queues · Projects · Tasks (Version Locked)                |
-+-------------------------------------------------------------------------+
+```mermaid
+flowchart LR
+    Browser["React patient, doctor, or admin portal"] -->|JWT bearer request| API["Express routes and role checks"]
+    API -->|Tenant and ownership filters| DB[("MongoDB")]
+    Browser <-->|Authorized refresh events| Socket["Socket.IO rooms"]
+    API -->|Signal after an update| Socket
 ```
 
----
+Hospitals are represented by the `Business` model. Appointments and queue entries carry the hospital identifier alongside the patient, service, and, where applicable, the department and doctor. Department records keep a reference to the legacy service used for booking and duration calculations. Patients may book at different hospitals and see records linked to their own account. Hospital teams are scoped to their assigned hospital. Doctor worklists are scoped to the assigned clinician. Project access requires ownership or membership in the same workspace tenant.
 
-## 📁 Repository Structure
+Socket.IO validates the session token and authorizes each requested room. Clinical events tell the client to refresh through REST. Their payload contains the hospital identifier. Clients periodically refresh as a fallback when the socket is unavailable.
 
-```
-QueueLess/
-├── assets/                          # Platform screenshots & preview assets
-│   └── queueless.png
-├── Client/                          # React 19 Frontend (Vite)
-│   ├── public/                      # Static assets
-│   ├── src/
-│   │   ├── assets/                  # Brand assets & images
-│   │   ├── components/              # Protected routes & reusable components
-│   │   ├── context/                 # AuthContext (JWT & user state)
-│   │   ├── hooks/                   # useBusinessRealtime, useProjectRealtime
-│   │   ├── layouts/                 # AppLayout (Sidebar, navigation, mobile drawer)
-│   │   ├── pages/                   # 20 routed pages (Landing, Dashboards, Queue, etc.)
-│   │   ├── services/                # API modules (Axios client & Socket.IO singleton)
-│   │   ├── styles.css               # Centralized Pistachio/Cream Design System & CSS tokens
-│   │   ├── App.jsx                  # Application routing tree
-│   │   └── main.jsx                 # Entry point
-│   ├── index.html                   # HTML template with Google Fonts (Inter, Plus Jakarta Sans)
-│   ├── vite.config.js               # Vite configuration
-│   └── package.json
-├── Server/                          # Node.js + Express Backend
-│   ├── src/
-│   │   ├── config/                  # MongoDB database connection
-│   │   ├── controllers/             # REST API business logic controllers
-│   │   ├── middleware/              # JWT authMiddleware & RBAC requireRole
-│   │   ├── models/                  # Mongoose Schemas (Tenant-isolated)
-│   │   ├── routes/                  # Express route definitions
-│   │   ├── services/                # Queue calculation & analytics services
-│   │   ├── sockets/                 # Socket.IO event handlers
-│   │   ├── tests/                   # Integration & Concurrency test suites
-│   │   └── server.js                # Express & Socket.IO HTTP server entry
-│   └── package.json
-├── QUEUELESS_BUG_AUDIT.md           # Engineering Bug Audit & Verification Report
-└── README.md                        # Platform Documentation
+```mermaid
+flowchart LR
+    Doctor["Choose hospital, department, doctor, and time"] --> Confirmed["Confirmed appointment"]
+    Confirmed --> CheckIn["Check in on the appointment date"]
+    CheckIn --> Waiting["Queue token and estimated wait"]
+    Waiting --> Called["Clinician calls patient"]
+    Called --> Serving["Consultation starts"]
+    Serving --> Completed["Visit and queue entry complete"]
+    Confirmed --> Cancelled["Cancelled"]
+    Called --> NoShow["No-show"]
 ```
 
----
+Wait predictions combine queue order, historical consultation durations, and the service duration and buffer settings. The result is an estimate that changes as the queue moves.
 
-## 🚀 Getting Started & Local Development
+## Project structure
 
-### Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **MongoDB**: Local MongoDB instance or MongoDB Atlas connection URI
-- **npm** or **yarn**
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/RujulaSharma/QueueLess-MultiTenant-Saas.git
-cd QueueLess
+```text
+Client/
+  src/components/   Route guards and shared UI
+  src/context/      Authentication state
+  src/layouts/      Portal navigation
+  src/pages/        Public pages, dashboards, and workflows
+  src/services/     HTTP and Socket.IO clients
+Server/
+  src/controllers/  Workflow handlers
+  src/middleware/   Session and role checks
+  src/models/       MongoDB schemas and indexes
+  src/routes/       Express route definitions
+  src/services/     Queue, appointment, realtime, and analytics logic
+  src/tests/        Database and API workflow tests
+assets/             Project screenshots
 ```
 
-### 2. Configure Environment Variables
+## API overview
 
-#### Backend (`Server/.env`):
-```env
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/queueless
-JWT_SECRET=your_super_secret_jwt_key_here
-CLIENT_URL=http://localhost:5173
+All paths are relative to `/api`. Protected routes accept `Authorization: Bearer <token>`.
+
+| Area | Endpoints |
+| --- | --- |
+| Session | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Directory and availability | `GET /businesses`, `GET /businesses/:id/departments`, `GET /doctors/public?departmentId=…`, `GET /doctors/availability?doctorId=…&date=YYYY-MM-DD` |
+| Appointments | `POST /appointments`, `GET /appointments/my`, `GET /appointments/:id`, `PATCH /appointments/:id/check-in`, `PATCH /appointments/:id/cancel` |
+| Queue and wait | `GET /queue/my`, `GET /queue/business/:businessId`, `GET /predictions/wait-time`, `/staff/queue` |
+| Dashboards and setup | `GET /doctor/dashboard`, `GET /business/dashboard`, `/admin/business`, `/admin/departments`, `/admin/doctors`, `/analytics` |
+| Workspace | `/projects`, `/tasks` |
+| Health | `GET /health` |
+
+## Local setup
+
+Use Node.js 22 or newer and MongoDB 6.0 or newer. Install both packages from the repository root.
+
+```sh
+npm ci --prefix Server
+npm ci --prefix Client
 ```
 
-#### Frontend (`Client/.env`):
-```env
-VITE_API_URL=http://localhost:5000/api
-VITE_SOCKET_URL=http://localhost:5000
+Copy `Server/.env.example` to `Server/.env` and `Client/.env.example` to `Client/.env`. Set a unique JWT secret and start MongoDB. Run each command in its own terminal.
+
+```sh
+npm run dev --prefix Server
+npm run dev --prefix Client
 ```
 
-### 3. Install Dependencies
+Open [the local client](http://localhost:5173). Confirm database connectivity at [the API health endpoint](http://localhost:5000/api/health).
 
-```bash
-# Install Server dependencies
-npm --prefix Server install
+Public registration creates a patient account. To provision the first local hospital administrator, register a development account and set its `role` to `ADMIN` in your local MongoDB `users` collection. Sign in again, complete Hospital Profile, create a department, and create a doctor account from the Doctors screen. Use synthetic names and appointment notes for demo data.
 
-# Install Client dependencies
-npm --prefix Client install
+### Environment variables
+
+| File | Variable | Purpose |
+| --- | --- | --- |
+| `Server/.env` | `PORT` | API and Socket.IO port, defaults to `5000` |
+| `Server/.env` | `CLIENT_URL` | Allowed browser origin, defaults to `http://localhost:5173` |
+| `Server/.env` | `MONGO_URI` | MongoDB connection URI |
+| `Server/.env` | `MONGO_DB_NAME` | Optional database name override |
+| `Server/.env` | `JWT_SECRET` | Secret for verifying session tokens |
+| Server process | `TZ` | Hospital calendar timezone for the deployment, for example `Asia/Kolkata` |
+| `Client/.env` | `VITE_API_URL` | API base URL including `/api` |
+| `Client/.env` | `VITE_SOCKET_URL` | Socket.IO origin. Defaults to the API origin. |
+
+The doctor-slot index enforces one occupied appointment per hospital, doctor, date, and time. If an existing database contains exact duplicate occupied slots, reconcile those records before starting the upgraded API so MongoDB can build the index.
+
+## Verification
+
+Run the backend suites against an isolated development database configured through `MONGO_URI`. Install both packages first because the API workflow suite uses the client’s Socket.IO package.
+
+```sh
+npm test --prefix Server
+npm run test:workspace --prefix Server
+npm run test:api --prefix Server
+npm run build --prefix Client
 ```
 
-### 4. Run the Application
+The API workflow exercises authenticated and cross-tenant requests, Socket.IO room access and event payloads, hospital setup, availability, concurrent booking and check-in, wait prediction, and consultation completion.
 
-```bash
-# Start Backend Server (runs on http://localhost:5000)
-npm --prefix Server run dev
+The mobile Chrome smoke test used the live local API for registration, booking, check-in, and a Socket.IO-driven queue update. The landing page, booking form, and three role dashboards were also checked in Chrome at 390, 768, and 1440 pixels using synthetic data. Production hosting and cross-browser coverage remain unverified.
 
-# Start Frontend Development Server (runs on http://localhost:5173)
-npm --prefix Client run dev
-```
+## Screenshots
 
----
+The dashboard screenshots use synthetic demo data.
 
-## 🧪 Testing & Verification
+![QueueLess landing page](assets/queueless-landing.png)
 
-QueueLess includes a verified end-to-end integration and concurrency test suite:
+![Patient dashboard](assets/queueless-customer.png)
 
-```bash
-# Run backend integration & concurrency test suite
-npm --prefix Server test
-```
+![Doctor dashboard](assets/queueless-doctor.png)
 
-**Verification Results:**
-- ✔ MongoDB connection established
-- ✔ User authentication & RBAC roles (`ADMIN`, `DOCTOR`, `CUSTOMER`)
-- ✔ Hospital tenant creation & isolation
-- ✔ Department & clinical service mapping
-- ✔ Doctor profile linking & slot configuration
-- ✔ Patient appointment booking
-- ✔ Real-time queue token generation & status lifecycle transitions
-- ✔ ALG-WEB-01 Project & Task creation
-- ✔ Simultaneous update conflict detection (`HTTP 409 Conflict` on stale version edit)
-- ✔ Automated test data teardown
+![Hospital admin dashboard](assets/queueless-admin.png)
 
-```bash
-# Run production client build
-npm --prefix Client run build
-```
-- ✔ 1,706 modules transformed with 0 build errors.
+## Future improvements
 
----
-
-## 📡 Core API Reference
-
-### Authentication & Profiles
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Register customer, doctor, or hospital admin | Public |
-| `POST` | `/api/auth/login` | Authenticate user & issue JWT | Public |
-| `GET` | `/api/profile/me` | Retrieve authenticated user profile | Authenticated |
-| `PUT` | `/api/profile/me` | Update personal profile information | Authenticated |
-
-### Hospital & Clinical Management
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| `GET` | `/api/admin/business` | Get hospital business profile | ADMIN |
-| `PUT` | `/api/admin/business` | Update hospital details & operating hours | ADMIN |
-| `GET` | `/api/admin/departments` | List hospital departments | ADMIN |
-| `POST` | `/api/admin/departments` | Create new department | ADMIN |
-| `GET` | `/api/admin/doctors` | List doctors in hospital | ADMIN |
-| `POST` | `/api/admin/doctors` | Onboard and configure doctor | ADMIN |
-
-### Appointments & Real-Time Queue
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| `POST` | `/api/appointments/book` | Book patient appointment slot | Authenticated |
-| `GET` | `/api/appointments/my` | List current user appointments | Authenticated |
-| `GET` | `/api/appointments/:id` | Get detailed appointment record | Authorized User |
-| `POST` | `/api/queue/checkin` | Check in patient & generate queue token | Authenticated |
-| `GET` | `/api/queue/active` | Get live queue status & wait time | Authenticated |
-| `POST` | `/api/staff/queue/next` | Doctor calls next patient | DOCTOR / ADMIN |
-| `POST` | `/api/staff/queue/:id/complete`| Doctor marks consultation complete | DOCTOR / ADMIN |
-
-### Collaborative Project Workspace (ALG-WEB-01)
-| Method | Endpoint | Description | Access |
-|---|---|---|---|
-| `GET` | `/api/projects` | List projects where user is a member | Authenticated |
-| `POST` | `/api/projects` | Create new workspace project | Authenticated |
-| `GET` | `/api/projects/:id` | Get project details, members, and stats | Project Member |
-| `GET` | `/api/tasks/project/:id` | List all tasks for project | Project Member |
-| `POST` | `/api/tasks` | Create task with initial version 1 | Project Member |
-| `PUT` | `/api/tasks/:id` | Update task with version check (409 on conflict) | Project Member |
-| `POST` | `/api/tasks/:id/comments` | Add comment to task | Project Member |
-
----
-
-## 🛡 Security & Reliability
-
-1. **Tenant Isolation**: Every database write and query enforces the user's `businessId` scope.
-2. **Role-Based Access Control (RBAC)**: All administrative and clinical routes require explicit `requireRole("ADMIN")` or `requireRole("DOCTOR", "ADMIN")`.
-3. **Safe Concurrency**: Tasks maintain integer `version` numbers. Simultaneous updates with mismatched versions trigger explicit HTTP 409 Conflict responses instead of silently overwriting teammate contributions.
-4. **Resilient Realtime**: Client Socket.IO hooks utilize stable singleton references and room departure events to prevent memory leaks and reconnection storms.
-
----
-
-## 📄 License
-This project is licensed under the ISC License.
+- Per-hospital timezones, configurable doctor hours, and time-off calendars.
+- Appointment reminders and rescheduling with patient notification preferences.
+- Audit trails for clinical record access and status changes.
+- Transactional queue updates and a shared Socket.IO adapter for multi-instance deployments.
+- Browser regression tests for booking, check-in, and role-specific workflows.

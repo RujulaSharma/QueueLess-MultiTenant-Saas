@@ -191,7 +191,7 @@ async function runIntegrationTestSuite() {
     const conflictingTask = await Task.findOneAndUpdate(
       { _id: task._id, version: staleVersion },
       { $set: { status: "IN_PROGRESS" }, $inc: { version: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     );
     if (conflictingTask) {
       console.log(`   ✔ First update succeeded. Task version is now ${conflictingTask.version}.`);
@@ -201,7 +201,7 @@ async function runIntegrationTestSuite() {
     const secondConflict = await Task.findOneAndUpdate(
       { _id: task._id, version: staleVersion },
       { $set: { status: "COMPLETED" }, $inc: { version: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (secondConflict === null) {

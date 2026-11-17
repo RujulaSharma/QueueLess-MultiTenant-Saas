@@ -2620,19 +2620,6 @@ table thead th,
   box-shadow: 0 1px 0 var(--border);
 }
 
-/* Scroll Reveal Animations */
-.reveal-on-scroll {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-
-.reveal-on-scroll.is-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 /* Floating Back to Top Button */
 .back-to-top-btn {
   position: fixed;
@@ -3348,3 +3335,94 @@ table thead th,
   padding-right: 4px;
 }
 
+
+/* Shared portal surfaces */
+.app-shell {
+  background: #f3f6f8;
+}
+.main-content {
+  min-width: 0;
+}
+.main-content .dashboard-welcome {
+  padding: clamp(1.15rem, 3vw, 2.25rem);
+  background: linear-gradient(120deg, #e1f3ef, #f5fbfa 60%, #e8f0fa);
+  border: 1px solid #d5e6e5;
+  border-radius: 20px;
+  color: #112c3b;
+}
+.main-content .stat-card,
+.main-content .panel {
+  min-width: 0;
+  border-color: #dce6ec;
+  box-shadow: 0 2px 4px rgb(16 42 55 / 4%), 0 12px 24px rgb(16 42 55 / 4%);
+}
+.stat-card > strong {
+  font-variant-numeric: tabular-nums;
+}
+.clinical-worklist {
+  margin-top: 18px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+}
+.table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid #176a7f;
+  outline-offset: 3px;
+}
+@media (max-width: 900px) {
+  .clinical-worklist {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .doctor-stat-grid, .patient-stat-grid, .admin-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dashboard-header-actions {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .route-content {
+    animation: portal-enter 270ms ease-out both;
+  }
+  .stat-grid .stat-card, .doctor-stat-grid .stat-card {
+    animation: portal-enter 340ms ease-out both;
+  }
+  .stat-card:nth-child(2) { animation-delay: 35ms; }
+  .stat-card:nth-child(3) { animation-delay: 70ms; }
+  .stat-card:nth-child(4) { animation-delay: 105ms; }
+
+  @keyframes portal-enter {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .public-cta, .quick-action, .shortcut-card {
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .public-cta:hover, .quick-action:hover, .shortcut-card:hover {
+    transform: translateY(-2px);
+  }
+  .volume-bar-wrap i {
+    transform-origin: bottom;
+    animation: volume-enter 420ms ease-out both;
+  }
+  @keyframes volume-enter {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+}

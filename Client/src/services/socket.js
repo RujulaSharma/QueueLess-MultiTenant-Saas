@@ -1,24 +1,36 @@
 import { io } from "socket.io-client";
+import api from "./api";
 
 let socket;
 
 export const getSocket = () => {
   if (!socket) {
-    socket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
+    socket = io(import.meta.env.VITE_SOCKET_URL || api.defaults.baseURL.replace(/\/api\/?$/, ""), {
       autoConnect: true,
-      transports: ["websocket", "polling"],
+      auth: (callback) => callback({ token: localStorage.getItem("queueless_token") }),
     });
   }
   return socket;
 };
 
-export const joinBusinessRoom = (businessId, onUpdate) => {
+export const disconnectSocket = () => socket?.disconnect();
+
+export const joinBusinessRoom = (businessId, onUpdate, onConnection) => {
   if (!businessId) return () => {};
   const client = getSocket();
+  if (!client.active && !client.connected) client.connect();
 
-  const join = () => client.emit("joinBusinessRoom", businessId);
+  let active = true;
+  const join = () => client.timeout(5000).emit("joinBusinessRoom", businessId, (error, allowed) => {
+    if (!active) return;
+    onConnection?.(!error && allowed === true);
+    if (!error && allowed) onUpdate?.();
+  });
+  const disconnected = () => onConnection?.(false);
+  client.on("disconnect", disconnected);
+  client.on("connect_error", disconnected);
   const handleUpdate = (payload) => {
-    if (!payload?.businessId || String(payload.businessId) === String(businessId)) {
+    if (String(payload?.businessId) === String(businessId)) {
       onUpdate?.(payload);
     }
   };
@@ -31,16 +43,20 @@ export const joinBusinessRoom = (businessId, onUpdate) => {
 
   return () => {
     client.off("connect", join);
+    active = false;
+    client.off("disconnect", disconnected);
+    client.off("connect_error", disconnected);
     client.off("queue:updated", handleUpdate);
     client.off("appointment:created", handleUpdate);
     client.off("appointment:updated", handleUpdate);
-    client.emit("leaveBusinessRoom", businessId);
+    if (client.connected) client.emit("leaveBusinessRoom", businessId);
   };
 };
 
 export const joinProjectRoom = (projectId, onEvent) => {
   if (!projectId) return () => {};
   const client = getSocket();
+  if (!client.active && !client.connected) client.connect();
 
   const join = () => client.emit("joinProjectRoom", projectId);
   
@@ -63,18 +79,15 @@ export const joinProjectRoom = (projectId, onEvent) => {
   ];
 
   client.on("connect", join);
-  events.forEach((evt) => {
-    client.on(evt, handleEvent(evt));
-  });
+  const handlers = events.map((event) => [event, handleEvent(event)]);
+  handlers.forEach(([event, handler]) => client.on(event, handler));
 
   if (client.connected) join();
 
   return () => {
     client.off("connect", join);
-    events.forEach((evt) => {
-      client.off(evt, handleEvent(evt));
-    });
-    client.emit("leaveProjectRoom", projectId);
+    handlers.forEach(([event, handler]) => client.off(event, handler));
+    if (client.connected) client.emit("leaveProjectRoom", projectId);
   };
 };
 

@@ -7,7 +7,8 @@
     "test": "node src/tests/integrationTestSuite.js",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "seed": "node src/seed.js"
+    "test:api": "node src/tests/apiWorkflowTest.js",
+    "test:workspace": "node src/tests/workspaceTest.js"
   },
   "keywords": [],
   "author": "",

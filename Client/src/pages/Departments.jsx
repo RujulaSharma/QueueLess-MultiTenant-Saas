@@ -57,7 +57,7 @@ export default function Departments() {
     <div className="manager-dashboard">
       <header className="page-header dashboard-welcome">
         <div>
-          <span className="eyebrow"><Building2 size={13} /> AIMA Hospital</span>
+          <span className="eyebrow"><Building2 size={13} /> Hospital</span>
           <h1>Departments</h1>
           <p>Manage the hospital departments and their doctor owners.</p>
         </div>

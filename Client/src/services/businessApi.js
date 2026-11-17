@@ -7,8 +7,8 @@ export const updateAppointmentStatus = (id, status) => api.patch(`/appointments/
 export const getBusinessAnalytics = (days = 30) =>
   api.get("/analytics/dashboard", { params: { days } });
 
-export const callNext = (businessId, serviceId) =>
-  api.post("/staff/queue/next", { businessId, serviceId });
+export const callNext = (businessId, serviceId, doctorId) =>
+  api.post("/staff/queue/next", { businessId, serviceId, doctorId });
 
 export const startServing = (queueId) =>
   api.patch(`/staff/queue/${queueId}/start`);

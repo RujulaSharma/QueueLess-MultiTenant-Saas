@@ -25,7 +25,7 @@ const register = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80 || typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email.trim()) || typeof password !== "string") {
       return res.status(400).json({
         success: false,
         message: "Name, email and password are required",
@@ -81,7 +81,7 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string" || !password) {
       return res.status(400).json({
         success: false,
         message: "Email and password are required",

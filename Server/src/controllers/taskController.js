@@ -12,7 +12,7 @@ const syncProjectProgress = async (projectId, io) => {
     const project = await Project.findByIdAndUpdate(
       projectId,
       { progress },
-      { new: true }
+      { returnDocument: "after" }
     )
       .populate("owner", "name email role")
       .populate("members.user", "name email role");

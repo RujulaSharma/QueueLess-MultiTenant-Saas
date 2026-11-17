@@ -6,6 +6,11 @@ const { calculateWaitPrediction } = require("../services/predictionService");
 const getQueuePrediction = async (req, res) => {
   try {
     const { businessId, serviceId, departmentId, queueId } = req.query;
+    const customer = req.user.role === "CUSTOMER";
+    if (customer ? !queueId : String(req.user.businessId) !== businessId) {
+      return res.status(403).json({ success: false, message: "You can only request predictions for your queue." });
+    }
+    let queueEntry;
     let resolvedServiceId = serviceId;
     if (!resolvedServiceId && departmentId) {
       const department = await Department.findOne({ _id: departmentId, hospital: businessId, isActive: true });
@@ -28,7 +33,7 @@ const getQueuePrediction = async (req, res) => {
     }
 
     if (queueId) {
-      const queueEntry = await Queue.findById(queueId);
+      queueEntry = await Queue.findOne({ _id: queueId, ...(customer ? { customer: req.user._id } : {}), status: { $in: ["WAITING", "CALLED", "SERVING"] } });
 
       if (!queueEntry) {
         return res.status(404).json({
@@ -52,6 +57,7 @@ const getQueuePrediction = async (req, res) => {
       businessId,
       serviceId: resolvedServiceId,
       targetQueueId: queueId || null,
+      ...(queueEntry ? { doctorId: queueEntry.doctor || null } : {}),
     });
 
     return res.status(200).json({

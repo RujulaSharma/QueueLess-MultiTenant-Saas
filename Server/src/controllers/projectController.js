@@ -17,13 +17,7 @@ exports.getProjects = async (req, res, next) => {
     const userId = req.user._id;
     const businessId = req.user.businessId;
 
-    const filter = {
-      $or: [
-        { owner: userId },
-        { "members.user": userId },
-        ...(businessId ? [{ businessId }] : []),
-      ],
-    };
+    const filter = { businessId: businessId || null, $or: [{ owner: userId }, { "members.user": userId }] };
 
     const projects = await Project.find(filter)
       .populate("owner", "name email role")
@@ -64,13 +58,7 @@ exports.getProjectDashboard = async (req, res, next) => {
     const userId = req.user._id;
     const businessId = req.user.businessId;
 
-    const projectFilter = {
-      $or: [
-        { owner: userId },
-        { "members.user": userId },
-        ...(businessId ? [{ businessId }] : []),
-      ],
-    };
+    const projectFilter = { businessId: businessId || null, $or: [{ owner: userId }, { "members.user": userId }] };
 
     const projects = await Project.find(projectFilter);
     const projectIds = projects.map((p) => p._id);
@@ -138,7 +126,7 @@ exports.getProjectDashboard = async (req, res, next) => {
 exports.getProjectById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const project = await Project.findById(id)
+    const project = await Project.findOne({ _id: id, businessId: req.user.businessId || null, $or: [{ owner: req.user._id }, { "members.user": req.user._id }] })
       .populate("owner", "name email role")
       .populate("members.user", "name email role");
 
@@ -219,7 +207,7 @@ exports.updateProject = async (req, res, next) => {
     const { id } = req.params;
     const { name, description, status, priority, category, deadline, progress } = req.body;
 
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, owner: req.user._id, businessId: req.user.businessId || null });
     if (!project) {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
@@ -259,7 +247,7 @@ exports.updateProject = async (req, res, next) => {
 exports.deleteProject = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, owner: req.user._id, businessId: req.user.businessId || null });
     if (!project) {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
@@ -288,7 +276,7 @@ exports.addMember = async (req, res, next) => {
     const { id } = req.params;
     const { email, userId, role } = req.body;
 
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, owner: req.user._id, businessId: req.user.businessId || null });
     if (!project) {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
@@ -300,7 +288,7 @@ exports.addMember = async (req, res, next) => {
       targetUser = await User.findOne({ email: email.toLowerCase().trim() });
     }
 
-    if (!targetUser) {
+    if (!targetUser?.isActive || String(targetUser.businessId || "") !== String(project.businessId || "")) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
@@ -344,7 +332,7 @@ exports.removeMember = async (req, res, next) => {
   try {
     const { id, userId } = req.params;
 
-    const project = await Project.findById(id);
+    const project = await Project.findOne({ _id: id, owner: req.user._id, businessId: req.user.businessId || null });
     if (!project) {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
@@ -365,6 +353,7 @@ exports.removeMember = async (req, res, next) => {
 
     const io = req.app.get("io");
     if (io) {
+      io.in(`user:${userId}`).socketsLeave(`project:${id}`);
       io.to(`project:${id}`).emit("project:updated", populatedProject);
     }
 
@@ -383,10 +372,9 @@ exports.removeMember = async (req, res, next) => {
 exports.getCollaborators = async (req, res, next) => {
   try {
     const businessId = req.user.businessId;
-    const filter = { isActive: true };
-    if (businessId) {
-      filter.businessId = businessId;
-    }
+    const filter = businessId
+      ? { isActive: true, businessId, role: { $ne: "CUSTOMER" } }
+      : { isActive: true, _id: req.user._id };
 
     const users = await User.find(filter).select("name email role").limit(50);
 

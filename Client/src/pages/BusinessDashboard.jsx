@@ -106,7 +106,7 @@ export default function BusinessDashboard() {
       <header className="page-header dashboard-welcome">
         <div>
           <span className="eyebrow"><Building2 size={13} /> Hospital management</span>
-          <h1>{data?.business?.name || "AIMA Hospital"}</h1>
+          <h1>{data?.business?.name || "Hospital"}</h1>
           <p>One hospital view for appointments, department queues, patients, and today's operational numbers.</p>
         </div>
         <div className="dashboard-header-actions">
@@ -223,7 +223,7 @@ export default function BusinessDashboard() {
               <div><strong>{entry.customer?.name || "Patient"}</strong><span>{entry.service?.name || "Department"} · {entry.estimatedWaitTime || 0} min</span></div>
               <span className={`status-badge status-${entry.status.toLowerCase()}`}>{entry.status.replace("_", " ")}</span>
               <div className="queue-controls">
-                {entry.status === "WAITING" && <ActionButton title="Call patient" icon={Play} disabled={busy} onClick={() => handle(() => callNext(user.businessId, entry.service?._id))} />}
+                {entry.status === "WAITING" && <ActionButton title="Call patient" icon={Play} disabled={busy} onClick={() => handle(() => callNext(user.businessId, entry.service?._id || entry.service, entry.doctor?._id || entry.doctor || null))} />}
                 {entry.status === "CALLED" && <><ActionButton title="Start visit" icon={Play} disabled={busy} onClick={() => handle(() => startServing(entry._id))} /><ActionButton title="Mark no-show" icon={XCircle} disabled={busy} onClick={() => handle(() => markNoShow(entry._id))} /></>}
                 {entry.status === "SERVING" && <ActionButton title="Complete visit" icon={CheckCircle2} disabled={busy} onClick={() => handle(() => completeService(entry._id))} />}
                 {entry.status === "WAITING" && <ActionButton title="Skip patient" icon={ArrowRight} disabled={busy} onClick={() => handle(() => skipQueue(entry._id))} />}

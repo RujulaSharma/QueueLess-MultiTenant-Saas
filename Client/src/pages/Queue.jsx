@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock3, Radio, Ticket, Users, XCircle, Play, CheckCircle2, SkipForward } from "lucide-react";
 import api from "../services/api";
-import { getMyQueue, cancelQueue } from "../services/queueApi";
+import { getMyQueue, cancelQueue, getPrediction } from "../services/queueApi";
 import { getBusinessQueue, callNext, startServing, completeService, skipQueue, markNoShow } from "../services/businessApi";
 import { joinBusinessRoom } from "../services/socket";
 import { useAuth } from "../context/AuthContext";
@@ -14,46 +14,61 @@ export default function Queue() {
   const isHospital = hospitalRoles.includes(user?.role);
   const isDoctor = user?.role === "DOCTOR";
   const [entries, setEntries] = useState([]);
+  const [prediction, setPrediction] = useState(null);
   const [history, setHistory] = useState([]);
-  const [connected, setConnected] = useState(false);
+  const [connections, setConnections] = useState({});
+  const businessKey = isHospital || isDoctor
+    ? String(user?.businessId || "")
+    : [...new Set(entries.filter((entry) => activeStatuses.includes(entry.status)).map((entry) => entry.business?._id || entry.business).filter(Boolean).map(String))].sort().join(",");
+  const connected = businessKey.split(",").some((id) => connections[id]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(null);
 
+  const requestVersion = useRef(0);
   const load = async () => {
+    const version = ++requestVersion.current;
     try {
       setError("");
       if (isDoctor) {
         const response = await api.get("/doctor/dashboard");
+        if (version !== requestVersion.current) return;
         setEntries(response.data.queue || []);
         setHistory([]);
       } else {
         const response = isHospital ? await getBusinessQueue(user.businessId) : await getMyQueue();
+        if (version !== requestVersion.current) return;
         setEntries(response.data.queue || []);
         setHistory(response.data.recentHistory || []);
+        if (!isHospital) {
+          const waiting = response.data.queue?.find((entry) => entry.status === "WAITING" && entry.department?._id);
+          if (waiting) {
+            const result = await getPrediction(waiting.business?._id || waiting.business, waiting.department._id, waiting._id).catch(() => null);
+            if (version !== requestVersion.current) return;
+            setPrediction(result ? { id: waiting._id, minutes: result.data.prediction.estimatedWaitMinutes } : null);
+          } else {
+            setPrediction(null);
+          }
+        }
       }
-    } catch (err) { setError(err.response?.data?.message || "Could not load the active queue"); }
+    } catch (err) {
+      if (version === requestVersion.current) setError(err.response?.data?.message || "Could not load the active queue");
+    }
   };
 
   useEffect(() => {
     if (!user) return;
     load();
-    const timer = setInterval(load, 3000);
-    return () => clearInterval(timer);
+    const timer = setInterval(load, 15000);
+    return () => { clearInterval(timer); requestVersion.current += 1; };
   }, [user?.role, user?.businessId]);
   useEffect(() => {
-    const businessIds = isHospital
-      ? [user?.businessId].filter(Boolean).map(String)
-      : [...new Set(entries.map((entry) => entry.business?._id || entry.business).filter(Boolean).map(String))];
-
-    if (!businessIds.length) {
-      setConnected(false);
-      return undefined;
-    }
-
-    setConnected(true);
-    const cleanups = businessIds.map((businessId) => joinBusinessRoom(businessId, load));
+    const businessIds = businessKey.split(",").filter(Boolean);
+    setConnections({});
+    const cleanups = businessIds.map((id) => joinBusinessRoom(id, load, (online) => {
+      setConnections((previous) => ({ ...previous, [id]: online }));
+    }));
     return () => cleanups.forEach((cleanup) => cleanup());
-  }, [isHospital, user?.businessId, entries.map((entry) => entry.business?._id || entry.business).filter(Boolean).join(",")]);
+  }, [businessKey]);
 
   const run = async (id, action) => {
     try { setBusy(id); setError(""); await action(); await load(); }
@@ -76,7 +91,7 @@ export default function Queue() {
     };
 
     return <div>
-      <header className="page-header"><div><span className="eyebrow">Doctor operations</span><h1>Active queue</h1><p>Manage patients currently waiting for consultation.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Standby"}</div></header>
+      <header className="page-header"><div><span className="eyebrow">Doctor operations</span><h1>Active queue</h1><p>Manage patients currently waiting for consultation.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Auto-refresh"}</div></header>
       {error && <div className="error-box page-error">{error}</div>}
       <section className="panel queue-history business-live-board">
         <div className="section-heading"><div className="empty-icon"><Users size={20}/></div><div><h2>{current ? `Token #${current.tokenNumber} is ${current.status === "SERVING" ? "in consultation" : "called"}` : `${waiting.length} patients waiting`}</h2><p>Your queue is limited to your assigned department and doctor profile.</p></div></div>
@@ -100,14 +115,14 @@ export default function Queue() {
   }
 
   if (isHospital) return <div>
-    <header className="page-header"><div><span className="eyebrow">Operations</span><h1>Active queue</h1><p>Hospital-wide view of patients currently awaiting or receiving service.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Standby"}</div></header>
+    <header className="page-header"><div><span className="eyebrow">Operations</span><h1>Active queue</h1><p>Hospital-wide view of patients currently awaiting or receiving service.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Auto-refresh"}</div></header>
     {error && <div className="error-box page-error">{error}</div>}
     <section className="panel queue-history business-live-board">
       <div className="section-heading"><div className="empty-icon"><Users size={20}/></div><div><h2>{entries.length} active patients in the hospital queues</h2><p>Monitor patients moving through each department queue.</p></div></div>
       {entries.length === 0 ? <div className="empty-inline"><CheckCircle2 size={18}/> The active queue is clear. Completed visits remain in recent activity below.</div> : entries.map((entry, index) => <div className="queue-row business-live-row" key={entry._id}>
         <strong>#{entry.tokenNumber}</strong><span><b>{entry.customer?.name || "Patient"}</b><small>{entry.department?.name || entry.service?.name || "Department"}{entry.doctor?.user?.name ? ` · Dr. ${entry.doctor.user.name}` : ""}</small></span><span>{entry.status}</span><span>{entry.status === "WAITING" ? `#${entry.position || index+1}` : entry.status === "SERVING" ? "Now" : "Called"}</span>
         <div className="queue-controls">
-          {entry.status === "WAITING" && <button className="icon-action" title="Call next patient" disabled={busy===entry._id} onClick={() => run(entry._id, () => callNext(user.businessId, entry.department?._id || entry.service?._id || entry.service))}><Play size={15}/></button>}
+          {entry.status === "WAITING" && <button className="icon-action" title="Call next patient" disabled={busy===entry._id} onClick={() => run(entry._id, () => callNext(user.businessId, entry.service?._id || entry.service, entry.doctor?._id || entry.doctor || null))}><Play size={15}/></button>}
           {entry.status === "CALLED" && <><button className="icon-action" title="Start patient" disabled={busy===entry._id} onClick={() => run(entry._id, () => startServing(entry._id))}><Play size={15}/></button><button className="icon-action" title="No show" disabled={busy===entry._id} onClick={() => run(entry._id, () => markNoShow(entry._id))}><XCircle size={15}/></button></>}
           {entry.status === "SERVING" && <button className="icon-action" title="Complete visit" disabled={busy===entry._id} onClick={() => run(entry._id, () => completeService(entry._id))}><CheckCircle2 size={15}/></button>}
           {entry.status === "WAITING" && <button className="icon-action" title="Skip" disabled={busy===entry._id} onClick={() => run(entry._id, () => skipQueue(entry._id))}><SkipForward size={15}/></button>}
@@ -123,9 +138,9 @@ export default function Queue() {
   </div>;
 
   return <div>
-    <header className="page-header"><div><span className="eyebrow">Patient queue</span><h1>Active queue</h1><p>Track your position and estimated wait time in real time.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Standby"}</div></header>
+    <header className="page-header"><div><span className="eyebrow">Patient queue</span><h1>Active queue</h1><p>Track your position and estimated wait time in real time.</p></div><div className={`live-pill ${connected ? "online" : ""}`}><Radio size={14}/> {connected ? "Live" : "Auto-refresh"}</div></header>
     {error && <div className="error-box page-error">{error}</div>}
-    {active ? <div className="queue-hero panel"><div className="queue-token"><Ticket size={22}/><span>Your token</span><strong>#{active.tokenNumber}</strong></div><div className="queue-doctor-line">{active.doctor?.user?.name ? `Dr. ${active.doctor.user.name}` : active.department?.name || "Department queue"}</div><div className="queue-metrics"><div><span>Position</span><strong>{active.status === "SERVING" ? "Now serving" : `#${active.position || "-"}`}</strong></div><div><span>Estimated wait</span><strong>{active.estimatedWaitTime || 0} min</strong></div><div><span>Status</span><strong>{active.status.replace("_", " ")}</strong></div></div><div className="queue-actions"><button className="ghost-button danger" onClick={() => run(active._id, () => cancelQueue(active._id))}><XCircle size={16}/> Leave queue</button></div></div> : <section className="panel empty-panel"><div className="empty-icon"><Users size={22}/></div><h2>You’re not in a active queue</h2><p>Book an appointment in a department, then check in when you arrive.</p></section>}
-    <section className="panel queue-history"><div className="section-heading"><div className="empty-icon"><Clock3 size={20}/></div><div><h2>Recent queue entries</h2><p>Your queue history stays visible here across your hospital visits.</p></div></div>{entries.length === 0 ? <p className="muted">No queue history yet.</p> : entries.map((entry) => <div className="queue-row" key={entry._id}><strong>#{entry.tokenNumber}</strong><span><b>{entry.department?.name || entry.service?.name || "Department"}</b><small>{entry.doctor?.user?.name ? `Dr. ${entry.doctor.user.name}` : "Department queue"}</small></span><span>{entry.status.replace("_", " ")}</span><span>{entry.estimatedWaitTime || 0} min</span></div>)}</section>
+    {active ? <div className="queue-hero panel"><div className="queue-token"><Ticket size={22}/><span>Your token</span><strong>#{active.tokenNumber}</strong></div><div className="queue-doctor-line">{active.doctor?.user?.name ? `Dr. ${active.doctor.user.name}` : active.department?.name || "Department queue"}</div><div className="queue-metrics"><div><span>Position</span><strong>{active.status === "SERVING" ? "Now serving" : `#${active.position || "-"}`}</strong></div><div><span>Estimated wait</span><strong>{prediction?.id === active._id ? prediction.minutes : active.estimatedWaitTime || 0} min</strong></div><div><span>Status</span><strong>{active.status.replace("_", " ")}</strong></div></div><div className="queue-actions"><button className="ghost-button danger" disabled={busy === active._id || active.status === "SERVING"} onClick={() => run(active._id, () => cancelQueue(active._id))}><XCircle size={16}/> Leave queue</button></div></div> : <section className="panel empty-panel"><div className="empty-icon"><Users size={22}/></div><h2>You haven’t checked in for a visit</h2><p>Book an appointment in a department, then check in when you arrive.</p></section>}
+    <section className="panel queue-history"><div className="section-heading"><div className="empty-icon"><Clock3 size={20}/></div><div><h2>Recent queue entries</h2><p>Your queue history stays visible here across your hospital visits.</p></div></div>{history.length === 0 ? <p className="muted">No queue history yet.</p> : history.map((entry) => <div className="queue-row" key={entry._id}><strong>#{entry.tokenNumber}</strong><span><b>{entry.department?.name || entry.service?.name || "Department"}</b><small>{entry.doctor?.user?.name ? `Dr. ${entry.doctor.user.name}` : "Department queue"}</small></span><span>{entry.status.replace("_", " ")}</span><span>{entry.estimatedWaitTime || 0} min</span></div>)}</section>
   </div>;
 }

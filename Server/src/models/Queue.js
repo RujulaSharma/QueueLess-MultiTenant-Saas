@@ -85,6 +85,8 @@ const queueSchema = new mongoose.Schema(
       min: 0,
     },
 
+    appointment: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },
+
     priority: {
       type: String,
       enum: ["NORMAL", "HIGH"],
@@ -105,5 +107,6 @@ const queueSchema = new mongoose.Schema(
 queueSchema.index({ business: 1, service: 1, status: 1 });
 queueSchema.index({ business: 1, tokenNumber: 1 });
 queueSchema.index({ customer: 1, status: 1 });
+queueSchema.index({ appointment: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Queue", queueSchema);

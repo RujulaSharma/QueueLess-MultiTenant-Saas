@@ -5,14 +5,7 @@ const Queue = require("../models/Queue");
 const ServiceHistory = require("../models/ServiceHistory");
 const { emitQueueUpdate } = require("../services/queueService");
 
-const dayBounds = (value = new Date()) => {
-  const date = new Date(value);
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
-  return { start, end };
-};
+const { dayBounds } = require("../services/appointmentSlots");
 
 async function getDoctorContext(userId) {
   if (!mongoose.isValidObjectId(userId)) return null;
@@ -27,7 +20,7 @@ const populateQueue = (query) => query
   .populate({ path: "doctor", populate: { path: "user", select: "name email" } })
   .populate("service", "name averageDuration")
   .populate("department", "name code")
-  .sort({ priority: -1, joinedAt: 1 });
+  .sort({ priority: 1, joinedAt: 1, _id: 1 });
 
 exports.getDoctorDashboard = async (req, res) => {
   try {
@@ -100,15 +93,15 @@ exports.callNext = async (req, res) => {
       doctor: doctor._id,
       department: doctor.department,
       status: "WAITING",
-    }).sort({ priority: -1, joinedAt: 1 });
+    }).sort({ priority: 1, joinedAt: 1, _id: 1 });
 
     if (!next) return res.status(404).json({ success: false, message: "No patients are waiting." });
 
-    next.status = "CALLED";
-    next.calledAt = new Date();
-    next.position = 0;
-    next.estimatedWaitTime = 0;
-    await next.save();
+    const claimed = await Queue.updateOne(
+      { _id: next._id, business: doctor.hospital, status: "WAITING" },
+      { $set: { status: "CALLED", calledAt: new Date(), position: 0, estimatedWaitTime: 0 } }
+    );
+    if (!claimed.modifiedCount) return res.status(409).json({ success: false, message: "The queue changed. Refresh and try again." });
 
     const populated = await populateQueue(Queue.findById(next._id));
     await emitQueueUpdate(req.app.get("io"), doctor.hospital, next.service, "CALLED", { doctorId: doctor._id, departmentId: doctor.department });
@@ -161,12 +154,12 @@ exports.completeService = async (req, res) => {
     }
     await queue.save();
 
-    const appointment = await Appointment.findOne({ queueEntry: queue._id });
+    const appointment = await Appointment.findOne({ queueEntry: queue._id, business: queue.business });
     if (appointment) {
       appointment.status = "COMPLETED";
       appointment.completedAt = queue.completedAt;
       await appointment.save();
-      req.app.get("io")?.to(`business:${queue.business}`).emit("appointment:updated", appointment);
+      req.app.get("io")?.to(`business:${queue.business}`).emit("appointment:updated", { businessId: queue.business });
     }
 
     await emitQueueUpdate(req.app.get("io"), doctor.hospital, queue.service, "COMPLETED", { doctorId: doctor._id, departmentId: doctor.department });
@@ -202,7 +195,7 @@ exports.markNoShow = async (req, res) => {
     queue.status = "NO_SHOW";
     await queue.save();
 
-    const appointment = await Appointment.findOne({ queueEntry: queue._id });
+    const appointment = await Appointment.findOne({ queueEntry: queue._id, business: queue.business });
     if (appointment) {
       appointment.status = "NO_SHOW";
       await appointment.save();
@@ -227,8 +220,11 @@ exports.updateAppointmentStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid appointment status." });
     }
 
-    const appointment = await Appointment.findOne({ _id: req.params.id, business: doctor.hospital, department: doctor.department });
+    const appointment = await Appointment.findOne({ _id: req.params.id, business: doctor.hospital, department: doctor.department, doctor: doctor._id });
     if (!appointment) return res.status(404).json({ success: false, message: "Appointment not found in your department." });
+    if (appointment.status === "CHECKED_IN" || ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(appointment.status)) {
+      return res.status(409).json({ success: false, message: "Use the active queue to update checked-in visits. Closed visits cannot be edited." });
+    }
     appointment.status = req.body.status;
     if (req.body.status === "COMPLETED") appointment.completedAt = new Date();
     await appointment.save();
@@ -238,7 +234,7 @@ exports.updateAppointmentStatus = async (req, res) => {
       .populate("service", "name averageDuration")
       .populate("department", "name code")
       .populate("queueEntry", "tokenNumber status position estimatedWaitTime");
-    req.app.get("io")?.to(`business:${doctor.hospital}`).emit("appointment:updated", populated);
+    req.app.get("io")?.to(`business:${doctor.hospital}`).emit("appointment:updated", { businessId: doctor.hospital });
     res.json({ success: true, message: "Appointment updated.", appointment: populated });
   } catch (error) {
     console.error("doctorUpdateAppointmentStatus:", error);

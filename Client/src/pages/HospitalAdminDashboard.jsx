@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import useBusinessRealtime from "../hooks/useBusinessRealtime";
 
 const money = (value) => new Intl.NumberFormat("en-IN", {
   style: "currency", currency: "INR", maximumFractionDigits: 0,
@@ -13,6 +15,7 @@ const statusOf = (value) => String(value || "").toUpperCase();
 
 export default function HospitalAdminDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,6 +35,8 @@ export default function HospitalAdminDashboard() {
       setRefreshing(false);
     }
   };
+
+  useBusinessRealtime(user?.businessId, () => load(true));
 
   useEffect(() => {
     load();
@@ -59,11 +64,11 @@ export default function HospitalAdminDashboard() {
       <header className="page-header dashboard-welcome">
         <div>
           <span className="eyebrow"><Building2 size={13} /> Hospital management</span>
-          <h1>{data?.business?.name || "AIMA Hospital"}</h1>
-          <p>One screen for today's operations, doctors, departments, queues and revenue.</p>
+          <h1>{data?.business?.name || "Hospital overview"}</h1>
+          <p>Review today’s schedule, patient flow, and department activity.</p>
         </div>
         <div className="dashboard-header-actions">
-          <span className="live-pill online"><Activity size={14} /> Live</span>
+          <span className="live-pill online"><Activity size={14} /> Auto-refresh</span>
           <button className="button secondary" onClick={() => load(true)} disabled={refreshing}>
             <RefreshCw size={15} className={refreshing ? "spin" : ""} /> {refreshing ? "Refreshing..." : "Refresh"}
           </button>
@@ -76,7 +81,7 @@ export default function HospitalAdminDashboard() {
         <div className="stat-card"><div className="stat-icon"><Users size={18} /></div><span>Patients scheduled today</span><strong>{data?.uniqueTodayPatients || 0}</strong><small>Unique patients with appointments</small></div>
         <div className="stat-card"><div className="stat-icon"><CalendarDays size={18} /></div><span>Appointments scheduled today</span><strong>{counts.total || 0}</strong><small>{counts.completed || 0} completed · {counts.pending || 0} pending</small></div>
         <div className="stat-card"><div className="stat-icon"><ListOrdered size={18} /></div><span>Active queue</span><strong>{queueCounts.total || 0}</strong><small>{queueCounts.waiting || 0} waiting · {queueCounts.serving || 0} serving</small></div>
-        <div className="stat-card"><div className="stat-icon"><WalletCards size={18} /></div><span>Collected revenue today</span><strong>{money(data?.revenue?.today)}</strong><small>{money(data?.revenue?.last30Days)} completed in 30 days</small></div>
+        <div className="stat-card"><div className="stat-icon"><WalletCards size={18} /></div><span>Consultation value today</span><strong>{money(data?.revenue?.today)}</strong><small>{money(data?.revenue?.last30Days)} in completed visits over 30 days</small></div>
       </section>
 
       <section className="admin-overview-grid">
@@ -131,8 +136,8 @@ export default function HospitalAdminDashboard() {
       <section className="admin-bottom-grid">
         <section className="panel">
           <div className="panel-title-row"><div><span className="eyebrow">Last 7 days</span><h2>Visit volume</h2></div><Link className="text-link inline-link" to="/analytics">Full analytics <ArrowRight size={14} /></Link></div>
-          <div className="admin-volume-chart">
-            {weekly.map((day) => <div className="volume-column" key={day.date}><div className="volume-bar-wrap"><i style={{ height: `${Math.max((day.appointments / maxWeekly) * 100, day.appointments ? 8 : 2)}%` }} /></div><strong>{day.appointments}</strong><span>{new Date(`${day.date}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span></div>)}
+          <div className="admin-volume-chart" role="list" aria-label="Daily appointment counts">
+            {weekly.map((day) => <div className="volume-column" role="listitem" key={day.date}><div className="volume-bar-wrap" aria-hidden="true"><i style={{ height: `${Math.max((day.appointments / maxWeekly) * 100, day.appointments ? 8 : 2)}%` }} /></div><strong>{day.appointments}</strong><span>{new Date(`${day.date}T12:00:00`).toLocaleDateString("en-IN", { weekday: "short" })}</span></div>)}
           </div>
         </section>
 

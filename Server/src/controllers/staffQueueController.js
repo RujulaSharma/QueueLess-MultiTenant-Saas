@@ -11,8 +11,8 @@ const getStaffBusinessId = (user) => {
 
 const callNext = async (req, res, next) => {
   try {
-    const businessId = getStaffBusinessId(req.user) || req.body.businessId;
-    const { serviceId, departmentId } = req.body;
+    const businessId = getStaffBusinessId(req.user);
+    const { serviceId, departmentId, doctorId } = req.body;
 
     if (!businessId || !mongoose.isValidObjectId(businessId)) {
       return res.status(400).json({ success: false, message: "Valid hospital is required" });
@@ -35,21 +35,29 @@ const callNext = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Department is not connected to a queue yet" });
     }
 
-    const current = await Queue.findOne({ business: businessId, service: resolvedServiceId, status: { $in: ["CALLED", "SERVING"] } });
+    if (doctorId != null && !mongoose.isObjectIdOrHexString(doctorId)) {
+      return res.status(400).json({ success: false, message: "Invalid doctor." });
+    }
+    const scope = {
+      business: businessId,
+      service: resolvedServiceId,
+      ...(doctorId !== undefined ? { doctor: doctorId } : {}),
+    };
+    const current = await Queue.findOne({ ...scope, status: { $in: ["CALLED", "SERVING"] } });
     if (current) {
       return res.status(409).json({ success: false, message: "A customer is already being served or called", queue: current });
     }
 
-    const nextCustomer = await Queue.findOne({ business: businessId, service: resolvedServiceId, status: "WAITING" }).sort({ priority: -1, joinedAt: 1 });
+    const nextCustomer = await Queue.findOne({ ...scope, status: "WAITING" }).sort({ priority: 1, joinedAt: 1, _id: 1 });
     if (!nextCustomer) {
       return res.status(404).json({ success: false, message: "No customers are waiting" });
     }
 
-    nextCustomer.status = "CALLED";
-    nextCustomer.calledAt = new Date();
-    nextCustomer.position = 0;
-    nextCustomer.estimatedWaitTime = 0;
-    await nextCustomer.save();
+    const claimed = await Queue.updateOne(
+      { _id: nextCustomer._id, business: businessId, status: "WAITING" },
+      { $set: { status: "CALLED", calledAt: new Date(), position: 0, estimatedWaitTime: 0 } }
+    );
+    if (!claimed.modifiedCount) return res.status(409).json({ success: false, message: "The queue changed. Refresh and try again." });
 
     const queue = await Queue.findById(nextCustomer._id)
       .populate("customer", "name email")
@@ -70,7 +78,8 @@ const startServing = async (req, res, next) => {
   try {
     const businessId = getStaffBusinessId(req.user);
     const filter = { _id: req.params.id, status: "CALLED" };
-    if (businessId) filter.business = businessId;
+    if (!businessId) return res.status(403).json({ success: false, message: "Hospital assignment required." });
+    filter.business = businessId;
 
     const queue = await Queue.findOne(filter);
     if (!queue) return res.status(404).json({ success: false, message: "Called queue entry not found" });
@@ -92,7 +101,8 @@ const completeService = async (req, res, next) => {
   try {
     const businessId = getStaffBusinessId(req.user);
     const filter = { _id: req.params.id, status: "SERVING" };
-    if (businessId) filter.business = businessId;
+    if (!businessId) return res.status(403).json({ success: false, message: "Hospital assignment required." });
+    filter.business = businessId;
 
     const queue = await Queue.findOne(filter);
     if (!queue) return res.status(404).json({ success: false, message: "Serving queue entry not found" });
@@ -120,7 +130,7 @@ const completeService = async (req, res, next) => {
     }
     await queue.save();
 
-    const linkedAppointment = await Appointment.findOne({ queueEntry: queue._id });
+    const linkedAppointment = await Appointment.findOne({ queueEntry: queue._id, business: queue.business });
     if (linkedAppointment) {
       linkedAppointment.status = "COMPLETED";
       linkedAppointment.completedAt = queue.completedAt;
@@ -133,7 +143,7 @@ const completeService = async (req, res, next) => {
     });
 
     if (linkedAppointment) {
-      req.app.get("io")?.to(`business:${queue.business}`).emit("appointment:updated", linkedAppointment);
+      req.app.get("io")?.to(`business:${queue.business}`).emit("appointment:updated", { businessId: queue.business });
     }
     res.json({ success: true, message: "Service completed", queue, appointment: linkedAppointment || null });
   } catch (error) { next(error); }
@@ -143,7 +153,8 @@ const skipQueue = async (req, res, next) => {
   try {
     const businessId = getStaffBusinessId(req.user);
     const filter = { _id: req.params.id, status: { $in: ["WAITING", "CALLED"] } };
-    if (businessId) filter.business = businessId;
+    if (!businessId) return res.status(403).json({ success: false, message: "Hospital assignment required." });
+    filter.business = businessId;
 
     const queue = await Queue.findOne(filter);
     if (!queue) return res.status(404).json({ success: false, message: "Queue entry cannot be skipped" });
@@ -164,7 +175,8 @@ const markNoShow = async (req, res, next) => {
   try {
     const businessId = getStaffBusinessId(req.user);
     const filter = { _id: req.params.id, status: "CALLED" };
-    if (businessId) filter.business = businessId;
+    if (!businessId) return res.status(403).json({ success: false, message: "Hospital assignment required." });
+    filter.business = businessId;
 
     const queue = await Queue.findOne(filter);
     if (!queue) return res.status(404).json({ success: false, message: "Called queue entry not found" });
@@ -172,7 +184,7 @@ const markNoShow = async (req, res, next) => {
     queue.status = "NO_SHOW";
     await queue.save();
 
-    const linkedAppointment = await Appointment.findOne({ queueEntry: queue._id });
+    const linkedAppointment = await Appointment.findOne({ queueEntry: queue._id, business: queue.business });
     if (linkedAppointment) {
       linkedAppointment.status = "NO_SHOW";
       await linkedAppointment.save();

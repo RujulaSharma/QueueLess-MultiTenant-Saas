@@ -92,7 +92,7 @@ export default function Doctors() {
     <div className="manager-dashboard">
       <header className="page-header dashboard-welcome">
         <div>
-          <span className="eyebrow"><UserCog size={13} /> AIMA Hospital</span>
+          <span className="eyebrow"><UserCog size={13} /> Hospital</span>
           <h1>Doctors</h1>
           <p>Create and manage doctor login accounts, professional details, and department assignments.</p>
         </div>
@@ -118,7 +118,7 @@ export default function Doctors() {
           <div className="form-two">
             <label className="field"><span>Work designation</span><select value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })}><option>Department Head</option><option>Senior Consultant</option><option>Consultant</option><option>Junior Consultant</option><option>Resident Doctor</option><option>Visiting Doctor</option></select></label>
             <label className="field"><span>Specialization</span><input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} placeholder="Cardiology" /></label>
-            <label className="field"><span>License number</span><input value={form.licenseNumber} onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })} placeholder="AIMA-CARD-001" /></label>
+            <label className="field"><span>License number</span><input value={form.licenseNumber} onChange={(e) => setForm({ ...form, licenseNumber: e.target.value })} placeholder="e.g. MED-12345" /></label>
           </div>
           <div className="form-two">
             <label className="field"><span>Experience (years)</span><input type="number" min="0" value={form.experienceYears} onChange={(e) => setForm({ ...form, experienceYears: e.target.value })} /></label>

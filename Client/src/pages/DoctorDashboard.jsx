@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock3, Edit3, PhoneCall, Stethoscope, UserCog, Users, XCircle } from "lucide-react";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import useBusinessRealtime from "../hooks/useBusinessRealtime";
 
 const statusLabel = {
   WAITING: "Awaiting consultation",
@@ -15,6 +17,7 @@ const statusLabel = {
 };
 
 export default function DoctorDashboard() {
+  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -36,16 +39,18 @@ export default function DoctorDashboard() {
     }
   }, []);
 
+  useBusinessRealtime(user?.businessId, loadDashboard);
+
   useEffect(() => {
     loadDashboard();
-    const timer = setInterval(loadDashboard, 5000);
+    const timer = setInterval(loadDashboard, 15000);
     return () => clearInterval(timer);
   }, [loadDashboard]);
 
   const doctor = data?.doctor;
 
   useEffect(() => {
-    if (doctor) {
+    if (doctor && !editingProfile) {
       setProfileForm({
         name: doctor.user?.name || "",
         designation: doctor.designation || "Consultant",
@@ -55,7 +60,7 @@ export default function DoctorDashboard() {
         consultationFee: doctor.consultationFee || 0,
       });
     }
-  }, [doctor]);
+  }, [doctor, editingProfile]);
 
   const saveProfile = async (e) => {
     e.preventDefault();
@@ -91,7 +96,7 @@ export default function DoctorDashboard() {
     try {
       setBusy(`appointment-${id}`);
       await api.patch(`/doctor/dashboard/appointments/${id}/status`, { status });
-      setNotice(`Appointment marked ${statusLabel[status].toLowerCase()}.`);
+      setNotice(`Appointment marked ${statusLabel[status]?.toLowerCase() || status.toLowerCase()}.`);
       await loadDashboard();
     } catch (err) {
       setError(err.response?.data?.message || "Could not update appointment.");
@@ -113,7 +118,7 @@ export default function DoctorDashboard() {
       <header className="page-header dashboard-welcome">
         <div>
           <span className="eyebrow"><Stethoscope size={13} /> Doctor Portal</span>
-          <h1>Good morning, {doctor?.user?.name || "Doctor"}</h1>
+          <h1>Clinical worklist</h1>
           <p>{doctor?.department?.name || "Department"} · {doctor?.specialization || "General Medicine"}</p>
         </div>
         <div className="status-badge">{doctor?.status || "ACTIVE"}</div>
@@ -141,7 +146,7 @@ export default function DoctorDashboard() {
         </article>
       </section>
 
-      <section className="dashboard-grid" style={{ gridTemplateColumns: "minmax(0, 1.35fr) minmax(300px, .65fr)", marginTop: 18 }}>
+      <section className="dashboard-grid clinical-worklist">
         <div className="panel">
           <div className="panel-title-row">
             <div><span className="eyebrow"><Users size={13} /> Active patient queue</span><h2>{current ? `Token #${current.tokenNumber} is ${statusLabel[current.status].toLowerCase()}` : "No patient currently being seen"}</h2></div>

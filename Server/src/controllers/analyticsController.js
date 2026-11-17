@@ -13,6 +13,10 @@ const getServiceAnalytics = async (req, res) => {
       });
     }
 
+    if (!["ADMIN", "STAFF"].includes(req.user.role) || String(req.user.businessId) !== businessId) {
+      return res.status(403).json({ success: false, message: "Analytics are available to your hospital team." });
+    }
+
     const parsedDays = Math.min(Math.max(Number(days) || 30, 1), 365);
 
     const analytics = await buildServiceAnalytics({

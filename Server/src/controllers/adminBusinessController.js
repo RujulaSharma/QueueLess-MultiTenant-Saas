@@ -81,7 +81,7 @@ const createBusiness = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { businessId: business._id, role: "ADMIN" },
-      { new: true }
+      { returnDocument: "after" }
     ).select("-password");
 
     res.status(201).json({

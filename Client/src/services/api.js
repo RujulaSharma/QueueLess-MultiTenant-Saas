@@ -17,9 +17,11 @@ export default api;
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const token = localStorage.getItem("queueless_token");
+    if (token && error.response?.status === 401 && error.config?.headers?.Authorization === `Bearer ${token}`) {
       localStorage.removeItem("queueless_token");
       localStorage.removeItem("queueless_user");
+      window.dispatchEvent(new Event("queueless:session-expired"));
     }
     return Promise.reject(error);
   }
